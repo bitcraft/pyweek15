@@ -4,14 +4,17 @@ Ideas for game:
 
 	Metroidvania adventure.
 
+	I'm reusing portions of my last entry for pyweek:
+	https://github.com/bitcraft/pyweek14
+
 
 
 Story:
-you've been dispatched to mars for a reality tv show and expected to live
-    the rest of your life there.
+    you've been dispatched to mars to investigate a deadly disease outbreak
+    on the colony there.
 
-    when you arrive, you are informed of a strange object found on mars and
-    are sent outside the area to investigate it.
+    when you arrive, you are informed of a strange object found nearby and
+    you are sent outside the colony to investigate it.
 
     when it is found, you realize that it is a door and you step through it.
 
@@ -22,51 +25,34 @@ you've been dispatched to mars for a reality tv show and expected to live
     you investigate the ruins and uncover secrets behind it
 
 
-Spoiler:
-    the city is actually a very small portion of of a city constructed by
-    ancient humans.
-
-    humans have been locked in a cycle of moving between earth and mars for
-    billions and billions of years.
-
 
 Goals:
+
     the game will have three possible endings:
 
-        1. you die and the tv show is canceled and the secret is lost
+        1. you die and the secret is lost
         2. you go as far as you can, but never can figure out what it is
-        3. you uncover evidence that ancient humans lived here before
+        3. you uncover evidence that [ spoiler censored! ]
 
 
 Mechanics:
 
-    the game will feature realistic physics and low gravity
-
-    the player has a jetpack
-
+    the game will feature realistic physics (pure python) and low gravity
+    the player can collect a jetpack, gun, and atmosphere generator
     portions of the ancient city can be activated to open new rooms
-
-    the player can collect relics from the civilization
-
-
-Eventually, you can recover the launching facility of a rocket that sent humans
-from mars back to earth.  the rocket is missing, but you are able to find maps
-that point to where the rocket landed in africa.
-
-the great flood story of the christian bible and other religions actually
-happened on mars and the species of mars were shuttled to earth on a giant ship
-
+    focus will be on level design and controlling your player in awkward gravity
+    the player can collect relics from the city
 
 
 possible enemies:
 
     robots are placed throughout the rooms and may be activated and will
-    attempt to destory the player.
+    attempt to destroy the player.
 
-    traps such as rusted floors and broken stairs may kill the player
+    traps such as rusted floors and broken stairs may kill the player.
 
     running and shooting may become an option with a item found 3/4 of the way
-    through the game
+    through the game.
 
 
 
