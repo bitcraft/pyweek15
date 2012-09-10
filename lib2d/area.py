@@ -121,56 +121,16 @@ class AdventureMixin(object):
         return xx, yy, zz
 
 
-    """
-    the underlying physics 'engine' is only capable of calculating
-    physics on 2 axises.  so, we just calulate the xy plane and fake the z
-    axis
-    """
-    def updatePhysics(self, body, time):
-        """
-        basic physics
-        """
-     
-        time = time / 100
-
-        if body.gravity:
-            body.acc += Vec2d((0, 9.8)) * time
-    
-        body.vel = body.acc * time
-        y, z = body.vel
-
-        if not y==0:
-            self.movePosition(body, (0, y, 0))
-
-        if z > 0: 
-            falling = self.movePosition(body, (0, 0, z))
-            if falling:
-                body.isFalling = True
-                self._grounded[body] = False
-            else:
-                if body.isFalling:
-                    body.parent.fallDamage(body.vel.y)
-                body.isFalling = False
-                self._grounded[body] = True
-                if int(body.vel.y) >= 1:
-                    body.acc.y = -body.acc.y * .2
-                else:
-                    body.acc.y = 0
-        elif z < 0:
-            flying = self.movePosition(body, (0, 0, z))
-            if flying:
-                self._grounded[body] = False
-                body.isFalling = True
-
-
     def setForce(self, body, (x, y, z)):
         body.acc = Vec2d(x, y)
 
 
-class PlatformerMixin(object):
+class PlatformMixin(object):
     """
     Mixin class is suitable for platformer games
     """
+
+    physicsGroupClass = physics.PlatformerPhysicsGroup
 
     def toRect(self, bbox):
         # return a rect that represents the object on the zy plane
@@ -181,19 +141,6 @@ class PlatformerMixin(object):
     the underlying physics 'engine' is only capable of calculating 2 axises.
     for playformer type games, we use the zy plane for calculations
     """
-    def updatePhysics(self, body, time):
-        """
-        basic physics
-        """
-     
-        time = time / 100
-
-        body.vel = body.acc * time
-        x, y = body.vel
-
-        if not y==0 or x==0:
-            self.movePosition(body, (x, y, 0))
-
 
     def grounded(self, body):
         try:
@@ -206,8 +153,19 @@ class PlatformerMixin(object):
         body.acc += Vec2d(y, z)
 
 
+    def worldToPixel(self, (x, y, z)):
+        return (y, z, x)
 
-class Area(AbstractArea, AdventureMixin):
+
+    def worldToTile(self, (x, y, z)):
+        xx = int(x) / self.tmxdata.tilewidth
+        yy = int(y) / self.tmxdata.tileheight
+        zz = 0
+        return xx, yy, zz
+
+
+
+class PlatformArea(AbstractArea, PlatformMixin):
     """3D environment for things to live in.
     Includes basic pathfinding, collision detection, among other things.
 
@@ -251,6 +209,11 @@ class Area(AbstractArea, AdventureMixin):
     NOTE: some of the code is specific for maps from the tmxloader
     """
 
+    # real mars gravity is 3.69 m/s2
+    # we make it just .5 to make the game more fun by exagerating it
+    gravity = .5
+
+
     def defaultPosition(self):
         return BBox((0,0,0,1,1,1))
 
@@ -261,11 +224,12 @@ class Area(AbstractArea, AdventureMixin):
 
     def __init__(self):
         AbstractArea.__init__(self)
+        self.bodies = {}
+        self.rawGeometry = []    # a list of bbox objects
+        self.physicsgroup = None
         self.exits    = {}
         self.geometry = {}       # geometry (for collisions) of each layer
-        self.bodies = {}         # hack
         self.extent = None       # absolute boundries of the area
-        self.joins = []          # records simple joins between bodies
         self.messages = []
         self.time = 0
         self.tmxdata = None
@@ -278,14 +242,11 @@ class Area(AbstractArea, AdventureMixin):
         self._addQueue = []
         self.drawables = []      # HAAAAKCCCCKCK
         self.changedAvatars = True #hack
-        self._grounded = {}
         self.music_pos = 0
 
         self.flashes = []
         self.inUpdate = False
         self._removeQueue = []
-
-        print "new area"
 
 
     def load(self):
@@ -323,13 +284,22 @@ class Area(AbstractArea, AdventureMixin):
 
 
     def add(self, thing, pos=None):
+        AbstractArea.add(self, thing)
+
         if pos is None:
             pos = self.defaultPosition().origin
 
-        body = physics.Body3(BBox((pos, thing.size)), (0,0,0), (0,0,0), 0)
-
+        # hackish stuff to allow the BBox class to properly subclass built-in
+        # list class (improves speed when translating bboxes)
+        l = list(pos)
+        l.extend(thing.size)
+        body = physics.Body3(BBox(l), (0,0,0), (0,0,0), 0)
         self.bodies[thing] = body
-        AbstractArea.add(self, thing)
+
+        # physics groups cannot be modified once created.  just make a new one.
+        bodies = self.bodies.values()
+        self.physicsgroup = self.physicsGroupClass(1, 0.006, self.gravity, bodies, self.rawGeometry)
+
         self.changedAvatars = True
 
 
@@ -352,76 +322,7 @@ class Area(AbstractArea, AdventureMixin):
     def movePosition(self, body, (x, y, z), push=True, caller=None, \
                      suppress_warp=False, clip=True):
 
-        """Attempt to move a body in 3d space.
-
-        Args:
-            body: (body): body to move
-            (x, y, z): difference of position to move
-        
-        Kwargs:
-            push: if True, then any colliding objects will be moved as well
-            caller: part of callback for object that created request to move
-
-        Returns:
-            None
-
-        Raises:
-            CollisionError  
-
-
-        You should catch the exception if body cannot move.
-        This function will emit a bodyRelMove event if successful. 
-        """
-
-        if not isinstance(body, Body):
-            raise ValueError, "must supply a body"
-
-        movable = 0
-        originalbbox = body.bbox
-        newbbox = originalbbox.move(x, y, z)
-
-        # collides with level geometry, cannot move
-        #if self.testCollideGeometry(newbbox) and clip:
-        #    return False
-
-        # test for collisions with other bodies
-        collide = self.testCollideObjects(newbbox)
-        try:
-            collide.remove(body)
-        except:
-            pass
-
-        # find things we are joined to
-        joins = [ i[1] for i in self.joins if i[0] == body ]
-
-        # if joined, then add it to collisions and treat it is if being pushed
-        if joins:
-            collide.extend(b for b in joins if not b == body)
-            push = True
-
-        # handle collisions with bodies
-        if collide:
-
-            # are we pushing something?
-            if push and all([ other.pushable for other in collide ]):
-
-                # we are able to move
-                body.oldbbox = body.bbox
-                body.bbox = newbbox
-
-                # recursively push other bodies
-                for other in collide:
-                    if not self.movePosition(other, (x, y, z), push=True):
-                        # we collided, so just go back to old position
-                        body.oldbbox = originalbbox
-                        body.bbox = originalbbox
-                        return False
-
-            else:
-                if clip: return False
-
-        body.oldbbox = body.bbox
-        body.bbox = newbbox
+        return
 
         self._sendBodyMove(body, caller=caller)
 
@@ -524,8 +425,7 @@ class Area(AbstractArea, AdventureMixin):
 
         import quadtree
 
-        self.geometry[layer] = quadtree.FastQuadTree(rects)
-        self.geoRect = rects
+        self.geometry[layer] = rects
 
 
     def pathfind(self, start, destination):
@@ -581,9 +481,10 @@ class Area(AbstractArea, AdventureMixin):
 
         [ sound.update(time) for sound in self.sounds ]
 
-        for thing, body in self.bodies.items():
-            self.updatePhysics(body, time)
-            thing.update(time)
+        for thing in self.bodies.keys():
+            thing.avatar.update(time)
+
+        self.physicsgroup.update(time)
 
         # awkward looping allowing objects to be added/removed during update
         self.inUpdate = False
@@ -597,50 +498,8 @@ class Area(AbstractArea, AdventureMixin):
         self.extent = Rect(rect)
 
 
-    def testCollideGeometry(self, bbox):
-        """
-        test if a bbox collides with the layer geometry
-
-        the geometry layer will be calculated from the z value
-        """
-
-        # TODO: calc layer value
-        layer = 0
-
-        try:
-            rect = self.toRect(bbox)
-            hit = self.geometry[layer].hit(rect)
-            con = self.extent.contains(rect)
-            return bool(hit) or not bool(con)
-
-        except KeyError:
-            msg = "Area Layer {} does not have a collision layer"
-            print msg.format(layer)
-            return False
-
-            raise Exception, msg.format(layer)
-
-
-    def testCollideObjects(self, bbox, skip=[]):
-        bboxes = []
-        bodies = []
-
-        for body in self.bodies.values():
-            if not body in skip:
-                bboxes.append(body.bbox)
-                bodies.append(body)
-
-        return [ bodies[i] for i in bbox.collidelistall(bboxes) ]
-
-
-    def testCollideGeometryAll(self):
-        # return list of all collisions between bodies and level geometry
-        pass
-
-
     def getPositions(self):
         return [ (o, b.origin) for (o, b) in self.bboxes.items() ]
-
 
 
     def getOldPosition(self, body):

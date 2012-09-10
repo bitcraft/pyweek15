@@ -1,4 +1,4 @@
-from lib2d.area import Area
+from lib2d.area import PlatformArea
 
-class Level(Area):
+class Level(PlatformArea):
     pass

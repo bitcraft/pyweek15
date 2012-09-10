@@ -141,14 +141,13 @@ class StaticAnimation(Animation):
     Immutable
     """
 
-    def __init__(self, filename, name, tile=None, size=None):
+    def __init__(self, image, name, tile=None, size=None):
         GameObject.__init__(self)
 
-        self.filename = filename
+        self.image = image
         self.name = name
         self.tile = tile
         self.size = size
-        self.image = None
 
         self.frames = [0]
         self.timing = [-1]
@@ -159,7 +158,7 @@ class StaticAnimation(Animation):
         load the images for use with pygame
         """
 
-        image = res.loadImage(self.filename, 0, 0, 1)
+        image = self.image.load()
       
         if self.tile:
             x, y = self.tile

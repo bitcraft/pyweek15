@@ -269,22 +269,6 @@ class VirtualMapElement(Element):
             dx = self.camera.extent.top - self.oldExtent.top
             self.shift((-dx, -dy))
             self.oldExtent = self.camera.extent.copy()
-
-        ao = [ i for i in self.camera.area.bodies.keys() if hasattr(i, "avatar")]
-
-        for a in ao:
-            bbox = self.camera.area.getBBox(a)
-            print bbox
-            x, y, z, d, w, h = bbox
-            pos = self.camera.worldToSurface((x, y, z)) - self.rect.topleft
-            try:
-                e = self.virtualElements[a]
-            except KeyError:
-                e = VirtualAvatarElement(self.frame, a)
-                self.virtualElements[a] = e
-                self.frame.packer.add(e)
-            finally:
-                e.rect = pygame.Rect(pos, (w, h))
                 
         self.camera.draw(surface, self.rect)
 

@@ -1,9 +1,13 @@
 from pytmx import tmxloader, buildDistributionRects
-from lib2d.area import Area
+from lib2d.area import PlatformArea
 from lib2d.bbox import BBox
 from lib2d import res
 from pygame import Rect
 
+
+
+def debug(text):
+    print "buildarea: {}".format(text)
 
 
 def fromTMX(parent, mapname):
@@ -14,17 +18,17 @@ def fromTMX(parent, mapname):
     """
 
     # for platformer maps
-    #def toWorld(data, (x, y, z)):
-    #    """ translate tiled map coordinates to world coordinates """
-    #    return z, x*data.tileheight, (y-2)*data.tilewidth
+    def toWorld(data, (x, y, z)):
+        """ translate tiled map coordinates to world coordinates """
+        return z, x*data.tilewidth, (y-2)*data.tileheight
 
     # for zelda-style games
-    def toWorld(data, (x, y, l)):
-        """ translate tiled map coordinates to world coordinates """
-        return y*data.tileheight, x*data.tilewidth, l
+    #def toWorld(data, (x, y, l)):
+    #    """ translate tiled map coordinates to world coordinates """
+    #    return y*data.tileheight, x*data.tilewidth, l
 
 
-    area = Area()
+    area = PlatformArea()
     parent.add(area)
     area.setParent(parent)
     area.mappath = res.mapPath(mapname)
@@ -36,10 +40,6 @@ def fromTMX(parent, mapname):
             prop['guid'] = int(prop['guid'])
         except KeyError:
             pass
-
-    # set the boundries (extent) of this map
-    area.setExtent(((0,0),
-        (data.width * data.tilewidth, data.height * data.tileheight)))
 
     props = data.getTilePropertiesByLayer(-1)
 
@@ -54,18 +54,17 @@ def fromTMX(parent, mapname):
     # load the level geometry from the 'control' layer 
     rects = []
     for rect in buildDistributionRects(data, "Control", real_gid=1):
-        # translate the tiled coordinates to world coordinates
-
-        x, y, sx, sy = rect
-
-        # for platformers
-        #rects.append(Rect(x,y,sx,sy))
-
-        # for zelda-style adventures
-        rect.append(Rect(x, y, sx, sy))
-
+        rects.append(Rect(rect))
 
     area.setLayerGeometry(0, rects)
+
+
+    # build 'raw geometry'
+    area.rawGeometry = []
+    for rect in rects:
+        y, z = rect.topleft
+        bbox = BBox((-100, y, z, 200, rect.width, rect.height))
+        area.rawGeometry.append(bbox)
 
 
     # load the npc's and place them in the default positions 
@@ -78,9 +77,10 @@ def fromTMX(parent, mapname):
             raise Exception, msg.format(gid)
 
         x, y, z = toWorld(data, pos.pop())
-        body = area._parent.getChildByGUID(int(prop['guid']))
-        area.add(body, (x, y, z))
-        area.setOrientation(body, "south")
+        thing = area._parent.getChildByGUID(int(prop['guid']))
+        debug("adding thing {} at {}".format(thing, (x, y, z)))
+        area.add(thing, (x, y, z))
+        area.setOrientation(thing, "south")
 
 
     # load the items and place them where they should go

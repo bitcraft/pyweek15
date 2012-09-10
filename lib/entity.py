@@ -24,7 +24,10 @@ class Entity(InteractiveObject):
     moved
     """
 
+    move_speed = .8      # m/s
+    jump_strength = .4  # for low gravity
+
     def __init__(self, avatar, builders, face):
         super(Entity, self).__init__(avatar, builders)
         self.faceImage = face
-
+        self.held = None

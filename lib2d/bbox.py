@@ -27,36 +27,6 @@ class BBox(list):
     __slots__ = []
 
 
-    def __new__(cls, *arg):
-        """
-        arg can be another bbox object
-        an object with a 'bbox' attribute
-        a list of six numbers: x, y, z, d, w, h
-        a tuple that defines the bbox
-        a list of two tuples: (x, y, z), (d, w, h)
-        """
-
-        print arg
-
-        if isinstance(arg, BBox):
-            return list.__new__(cls, arg)
-
-        elif isinstance(arg, (list, tuple)):
-            arg = arg[0]
-            if len(arg) == 2:
-                arg2 = list(arg[0])
-                arg2.extend(arg[1])
-                return list.__new__(cls, arg2)
-            elif len(arg) == 6:
-                return list.__new__(cls, arg)
-            else:
-                raise ValueError, arg
-
-        else:
-            raise ValueError, arg
-
-
-
     def copy(self):
         return BBox(self)
 
@@ -119,7 +89,7 @@ class BBox(list):
         if h < 0:
             z += h
             h = -h
-        return Rect(x, y, z, d, w, h)
+        return BBox(x, y, z, d, w, h)
 
 
     def contains(self, other):

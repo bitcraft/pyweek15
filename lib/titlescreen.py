@@ -64,7 +64,7 @@ class TitleScreen(GameState):
                 ('Quit', self.quit_game)],
                 font="visitor1.ttf", font_size=20)
         else:
-            self.menu = cMenu(20, -5, 'vertical', 100,
+            self.menu = Menu(20, -5, 'vertical', 100,
                 [('New Game', self.new_game),
                 #('Continue', self.load_game),
                 ('Introduction', self.show_intro),
@@ -83,8 +83,8 @@ class TitleScreen(GameState):
     def draw(self, surface):
         if self.redraw:
             self.redraw = False
-            if self.game:
-                self.border.draw(surface, surface.get_rect(), 200)
+            #if self.game:
+            self.border.draw(surface, surface.get_rect())
 
         self.menu.draw(surface)
 

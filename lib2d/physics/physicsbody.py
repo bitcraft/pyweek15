@@ -1,6 +1,5 @@
 from lib2d import vec, bbox
 import euclid
-import collections
 
 
 

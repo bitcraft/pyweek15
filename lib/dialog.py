@@ -173,7 +173,6 @@ class ChoiceDialog(GameState):
                 self.bkg = self.bkg.convert()
             elif self.counter == 7:
                 surface.fill((128,128,128), (14, 146, self.bkg.get_size()))
-                print "fill"
                 self.counter = 0
                 self.state = 1
                 self.bkg = None

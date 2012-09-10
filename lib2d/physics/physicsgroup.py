@@ -12,58 +12,14 @@ class PlatformerMixin(object):
     or surface coordinates.
     """
 
+    # accessing the bbox by index much faster than accessing by attribute
     def toRect(self, bbox):
-        return pygame.Rect((bbox.y, bbox.z, bbox.width, bbox.height))
+        return pygame.Rect((bbox[1], bbox[2], bbox[4], bbox[5]))
 
 
     def rectToBody(self, rect):
         newbbox = (0, rect.x, rect.y, 1, rect.width, rect.height)
-        return physicsbody.Body2(newbbox, (0,0), (0,0), 0)
-
-
-    def precompute(self, start, end, step):
-        """
-        run through various values to fill the vector cache with useful
-        values
-        """
-        def frange(start, end, step):
-            while start <= end:
-                yield start
-                start = round(start + step, self.precision)
-
-
-        for x in frange(start, end, step):
-            vec.Vec2d((0, x)) * self.timestep
-
-
-    def update(self, time):
-        for body in (b for b in self.bodies if b not in self.sleeping):
-            body.acc += self.gravity_delta
-
-            # rounding improves memoization at expense of accuracy
-            body.acc.y = round(body.acc.y, self.precision)
-            body.vel += body.acc * self.timestep
-            y, z = body.vel
-
-            if not y==0:
-                self.moveBody(body, (0, y, 0))
-
-            if z < 0:
-                old_bbox = body.bbox
-                self.moveBody(body, (0, 0, z))
-
-                # true when there is a collision
-                if old_bbox is body.bbox:
-                    if abs(body.vel.y) > .2:
-                        body.acc.y = 0
-                        body.vel.y = -body.vel.y * .2
-                    else:
-                        body.acc.y = 0
-                        body.vel.y = 0
-                        self.sleeping.append(body)
- 
-            elif z > 0:
-                self.moveBody(body, (0, 0, z))
+        return physicsbody.Body3(newbbox, (0,0,0), (0,0,0), 0)
 
 
 
@@ -81,52 +37,6 @@ class AdventureMixin(object):
     def rectToBody(self, rect):
         newbbox = (rect.x, rect.y, 0, rect.width, rect.height, 0)
         return physicsbody.Body3(newbbox, (0,0,0), (0,0,0), 0)
-
-
-    def update(self, time):
-        for body in (b for b in self.bodies if b not in self.sleeping):
-            body.acc += self.gravity_delta
-            body.vel += body.acc * self.timestep
-            x, y, z = body.vel
-
-            if not x==0:
-                if not self.moveBody(body, (x, 0, 0)):
-                    if abs(body.vel.x) > .2:
-                        body.acc.x = 0.0
-                        body.vel.x = -body.vel.x * .2
-                    else:
-                        body.acc.x = 0.0
-                        body.vel.x = 0.0
-
-            if not y==0:
-                if not self.moveBody(body, (0, y, 0)):
-                    if abs(body.vel.y) > .2:
-                        body.acc.y = 0.0
-                        body.vel.y = -body.vel.y * .2
-                    else:
-                        body.acc.y = 0.0
-                        body.vel.y = 0.0
-
-            if z < 0:
-                if not self.moveBody(body, (0, 0, z)):
-                    if abs(body.vel.z) > .2:
-                        body.acc.z = 0.0
-                        body.vel.z = -body.vel.z * .2
-                    else:
-                        body.acc.z = 0.0
-                        body.vel.z = 0.0
- 
-            elif z > 0:
-                self.moveBody(body, (0, 0, z))
-
-            if body.bbox.z == 0:
-                body.vel.x = body.vel.x * self.ground_friction
-                body.vel.y = body.vel.y * self.ground_friction
-
-            if (round(body.vel.x, 6) ==
-                round(body.vel.y, 6) ==
-                round(body.vel.z, 6) == 0.0) and body.bbox.z == 0:
-                self.sleeping.append(body)
 
 
 class PhysicsGroup(context.Context):
@@ -172,6 +82,9 @@ class PhysicsGroup(context.Context):
             self.staticBodies.append(body)
             rects.append(self.toRect(body.bbox))
 
+        for r in rects:
+            print r
+
         self.geometry = quadtree.FastQuadTree(rects)
 
         self.setTimestep(timestep)
@@ -179,6 +92,52 @@ class PhysicsGroup(context.Context):
 
     def __iter__(self):
         return itertools.chain(self.bodies, self.staticBodies)
+
+
+    def update(self, time):
+        for body in (b for b in self.bodies if b not in self.sleeping):
+            body.acc += self.gravity_delta
+            body.vel += body.acc * self.timestep
+            x, y, z = body.vel
+
+            if not x==0:
+                if not self.moveBody(body, (x, 0, 0)):
+                    if abs(body.vel.x) > .2:
+                        body.acc.x = 0.0
+                        body.vel.x = -body.vel.x * .2
+                    else:
+                        body.acc.x = 0.0
+                        body.vel.x = 0.0
+
+            if not y==0:
+                if not self.moveBody(body, (0, y, 0)):
+                    if abs(body.vel.y) > .2:
+                        body.acc.y = 0.0
+                        body.vel.y = -body.vel.y * .2
+                    else:
+                        body.acc.y = 0.0
+                        body.vel.y = 0.0
+
+            if z > 0:
+                if not self.moveBody(body, (0, 0, z)):
+                    if abs(body.vel.z) > 2:
+                        body.acc.z = 0.0
+                        body.vel.z = -body.vel.z * .2
+                    else:
+                        body.acc.z = 0.0
+                        body.vel.z = 0.0
+ 
+            elif z < 0:
+                self.moveBody(body, (0, 0, z))
+
+            if body.bbox.z == 0:
+                body.vel.x = body.vel.x * self.ground_friction
+                body.vel.y = body.vel.y * self.ground_friction
+
+            if (round(body.vel.x, 4) ==
+                round(body.vel.y, 4) ==
+                round(body.vel.z, 4) == 0.0) and body.bbox.z == 0:
+                self.sleeping.append(body)
 
 
     def scaleBody(self, body, scale):
@@ -204,6 +163,7 @@ class PhysicsGroup(context.Context):
 
     def moveBody(self, body, (x, y, z), clip=True):
         body.bbox.move(x, y, z)
+
         if self.testCollision(body.bbox):
             if body.bbox[2] < 0:
                 body.bbox[2] = 0.0
@@ -213,12 +173,12 @@ class PhysicsGroup(context.Context):
             return False
         return True
 
+
     def testCollision(self, bbox):
         # for adventure games
         if bbox[2] < 0:
             return True
         return bool(self.geometry.hit(self.toRect(bbox)))
-
 
 
 class PlatformerPhysicsGroup(PhysicsGroup, PlatformerMixin):

@@ -21,6 +21,7 @@ along with lib2d.  If not, see <http://www.gnu.org/licenses/>.
 
 from objects import GameObject
 import res, animation
+from pygame.transform import flip
 
 
 
@@ -46,6 +47,7 @@ class Avatar(GameObject):
         self.loop       = -1
         self.timer      = 0.0
         self.ttl = 0
+        self.flip = 0
         self._prevAngle = None
 
         for animation in animations:
@@ -59,7 +61,7 @@ class Avatar(GameObject):
     def _updateCache(self):
         angle = self.getOrientation()
         self.curImage = self.curAnimation.getImage(self.curFrame, angle) 
-
+        if self.flip: self.curImage = flip(self.curImage, 1, 0)
 
     @property
     def image(self):

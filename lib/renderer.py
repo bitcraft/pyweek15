@@ -19,13 +19,6 @@ class AvatarLayer(GameObject):
 class LevelCamera(Element):
     """
     The level camera manages sprites on the screen and a tilemap renderer.
-
-
-    'extent' expects the rect to be in surface coordinates of the map:
-        x = horizontal
-        y = vertical
-        (0,0) is top left pixel
-
     it will be mangled some to use the 3d coordinate system of the engine
     """
 
@@ -54,7 +47,7 @@ class LevelCamera(Element):
 
     def refreshAvatarObjects(self):
         return [ i for i in self.area.bodies.keys() if hasattr(i, "avatar")]
-        
+
 
     # HACK
     def getAvatarObjects(self):
@@ -146,8 +139,8 @@ class LevelCamera(Element):
         z is the vertical plane
         """
 
-        xx, yy = self.area.worldToPixel((x, y, z))
-        return vec.Vec2d(xx - self.extent.top, yy - self.extent.left)
+        xx, yy = self.area.worldToPixel((x, y, z))[:2]
+        return xx - self.extent.top, yy - self.extent.left
 
 
     def surfaceToWorld(self, (x, y)):

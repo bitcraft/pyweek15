@@ -1,9 +1,9 @@
 from renderer import LevelCamera
 
-from lib2d.gamestate import GameState
 from lib2d.buttons import *
 from lib2d.signals import *
-from lib2d import res, ui, gfx
+from lib2d.physics import euclid
+from lib2d import res, ui, gfx, context
 
 import pygame, math, time
 
@@ -56,16 +56,13 @@ class SoundManager(object):
 SoundMan = SoundManager()
 
 
-# GLOBAL LEET SKILLS
-state = None
-
 
 class LevelUI(ui.UserInterface):
     pass
 
 
 
-class LevelState(GameState):
+class LevelState(context.Context):
     """
     This state is where the player will move the hero around the map
     interacting with npcs, other players, objects, etc.
@@ -73,9 +70,15 @@ class LevelState(GameState):
     much of the work done here is in the Standard UI class.
     """
 
-    def __init__(self, parent, area, startPosition=None):
-        GameState.__init__(self, parent)
+    def __init__(self, parent, area):
+        super(LevelState, self).__init__(parent)
         self.area = area
+        self.hero = area.getChildByGUID(1)
+        self.hero_body = self.area.getBody(self.hero)
+
+        # awkward input handling
+        self.wants_to_stop_on_landing = False
+        self.input_changed = False
 
 
     def activate(self):
@@ -86,58 +89,106 @@ class LevelState(GameState):
         self.ui.rect = gfx.get_rect()
 
 
+    def update(self, time):
+        self.area.update(time)
+
+        if self.input_changed:
+            self.input_changed = False
+
+            if self.hero_body.vel.z == 0:
+
+                if self.wants_to_stop_on_landing:
+                    self.wants_to_stop_on_landing = False
+                    self.hero_body.vel.y = 0
+                else:
+                    self.hero_body.vel.y = self.player_vector[1]
+
+                if self.hero_body.vel.y == 0:
+                    self.hero.avatar.play("stand")
+
+                elif abs(self.hero_body.vel.y) < 1.0:
+                    self.hero.avatar.play("walk")
+
+                #else:
+                #    self.hero.avatar.play("run")
+
+
     def draw(self, surface):
         self.ui.draw(surface)
 
 
     def handle_commandlist(self, cmdlist):
-        self.ui.handle_commandlist(cmdlist)
+        #self.ui.handle_commandlist(cmdlist)
+        self.handleMovementKeys(cmdlist)
 
 
-@receiver(emitText)
-def displayText(sender, **kwargs):
-    x1, y1, z1 = kwargs['position']
-    x2, y2, z2 = hero_body.bbox.origin
-    d = math.sqrt(pow(x1-x2, 2) + pow(y1-y2, 2) + pow(z1-z2, 2))
-    state.updateText = True
+    def handleMovementKeys(self, cmdlist):
+        x=0; y=0; z=0
+        playing = self.hero.avatar.curAnimation.name
+        for cls, cmd, arg in cmdlist:
+            if arg == BUTTONUP:
+                self.input_changed = True
+                if cmd == P1_DOWN:
+                    if playing == "crouch":
+                        self.hero.avatar.play("uncrouch", loop=0)
+
+                elif cmd == P1_LEFT or cmd == P1_RIGHT:
+                    if self.hero_body.vel.z == 0:
+                        y = 0
+                    else:
+                        self.wants_to_stop_on_landing = True
+
+                elif cmd == P1_ACTION3 and self.hero.held:
+                    self.hero.parent.unjoin(hero_body, self.hero.held)
+                    msg = self.text['ungrab'].format(self.hero.held.parent.name)
+                    self.hero.parent.emitText(msg, thing=self.hero)
+                    self.hero.held = None
+
+            # these actions will repeat as button is held down
+            elif arg == BUTTONDOWN or arg == BUTTONHELD:
+                self.input_changed = True
+                if cmd == P1_UP:
+                    self.elevatorUp()
+
+                elif cmd == P1_DOWN:
+                    if not self.elevatorDown():
+                        if self.area.grounded(self.area.getBody(self.hero)):
+                            if playing == "stand":
+                                self.hero.avatar.play("crouch", loop_frame=4)
+
+                if cmd == P1_LEFT:
+                    y = -1
+                    self.hero.avatar.flip = 1
+
+                elif cmd == P1_RIGHT:
+                    y = 1
+                    self.hero.avatar.flip = 0
 
 
-@receiver(emitSound)
-def playSound(sender, **kwargs):
-    x1, y1, z1 = kwargs['position']
-    x2, y2, z2 = hero_body.bbox.origin
-    d = math.sqrt(pow(x1-x2, 2) + pow(y1-y2, 2) + pow(z1-z2, 2))
-    try:
-        vol = 1/d * 20 
-    except ZeroDivisionError:
-        vol = 1.0
-    if vol > .02:
-        SoundMan.play(kwargs['filename'], volume=vol)
+            # these actions will not repeat if button is held
+            if arg == BUTTONDOWN:
+                self.input_changed = True
+                if cmd == P1_ACTION1:
+                    for thing, body in getNearby(self.hero, 8):
+                        if hasattr(thing, "use"):
+                            thing.use(self.hero)
+
+                elif cmd == P1_ACTION2:
+                    if (not self.hero.held) and (not playing == "crouch"):
+                        self.hero_body.vel.z = -self.hero.jump_strength
+
+                elif cmd == P1_ACTION3:
+                    for thing, body in getNearby(self.hero, 6):
+                        if thing.pushable and not self.hero.held:
+                            self.hero.parent.join(hero_body, body)
+                            self.hero.held = body
+                            msg = self.text['grab'].format(thing.name) 
+                            self.hero.parent.emitText(msg, thing=self.hero)
 
 
-@receiver(bodyAbsMove)
-def bodyMove(sender, **kwargs):
-    area = sender
-    body = kwargs['body']
-    position = kwargs['position']
-    state = kwargs['caller']
+        if (not x == 0) or (not y == 0) or (not z == 0):
+            if self.hero.held:
+                y = y / 3.0
 
-    if state is None:
-        return
-
-
-@receiver(bodyWarp)
-def bodyWarp(sender, **kwargs):
-    area = sender
-    body = kwargs['body']
-    destination = kwargs['destination']
-    state = kwargs['caller']
-
-    if state is None:
-        return
-
-    if body == state.hero:
-        #sd.push(WorldState(destination))
-        #sd.done()
-        pass
+        self.player_vector = x, y*self.hero.move_speed, z
 
