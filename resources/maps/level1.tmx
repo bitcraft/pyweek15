@@ -34,7 +34,7 @@
  </tileset>
  <layer name="Background 1" width="49" height="45">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAA+2XsRKCMAxA2fhfBj3dVNRZBv0i+QP8A535BOMdnLlctSgpTUqGd00hQ54lbW3zLGuBFbDuYq2YgwxScig7tgpi3zpUAuIrUKPa6FzDt9QAN1QbnWtwuAMPVBudm8O00NrMQbZDKRh6dnGuQzPy9+33yk/vaQ+HcJiCIgEHXNucHHaCGepQCILe8TQ60Duexn5IZW/9p6dj1zt3h9j75jeGOrj+Y0vhl3tr7FrNwRzMwRzMQabD60zc5O/zUWrsW4cTeiY19jksgKVjxLlcOVzfFnU4AEfHiHO5ckI5nIGLY8S5XDkhHCT0q/W09bT1NI/DXiF97U9O2LoLdCIAAA==
+   H4sIAAAAAAAAA+2XMQ7CMAxFu/W8ZQDBBhSYywAnghuUG8A5MFIrLCsQEE5rhz88xWk9+JE6CVVZFBUxJxZd7BU42CAnh7pj5SCOrcPeQHwizqw2OffwLbXEhdUm5x4crsSN1SbncBgWWRscbDvUhpFnl+Y6tD/+vv1e+eq97OEUDkMwycCB1/ZPDmvDeFwHecfz6CDveB4dctlbeW1w8OEw9r75jk8dQv+xrfDNvXXsWuEABzjAAQ42HR5n4rJ8no9W49g6NOyZ1TjmMCVmgZHnauVofVvSYUvsAiPP1cpJ5XAgjoGR52rlpHCw0K/oafQ0elrHYeOQvvY7XtwEaXQiAAA=
   </data>
  </layer>
  <layer name="Background 2" width="49" height="45">

@@ -4,7 +4,7 @@ from lib2d.bbox import BBox
 from lib2d.ui import Element
 from lib2d import vec
 
-from pygame import Rect, draw
+from pygame import Rect, draw, Surface
 import weakref
 
 
@@ -52,8 +52,10 @@ class LevelCamera(Element):
         par_tmx = pytmx.tmxloader.load_pygame(
                   lib2d.res.mapPath('parallax0.tmx'), force_colorkey=(128,128,0))
 
-        self.maprender.buffer.set_colorkey((128,128,128))
-
+        # EPIC HACK GO
+        i = lib2d.res.loadImage("../tilesets/level0.png")
+        colorkey = i.get_at((0,0))[:3]
+        self.maprender.buffer.set_colorkey(colorkey)
         self.parallaxrender = BufferedTilemapRenderer(par_tmx, (w, h))
  
 
@@ -144,9 +146,15 @@ class LevelCamera(Element):
         # should not be sorted every frame
         onScreen.sort(key=screenSorter)
 
+        # mor HAX
+        #import pygame
+        #w, h = surface.get_size()
+        #temp = Surface((w*1.5, h))
+        #self.parallaxrender.draw(temp, Rect(0,0,w*1.5,h*1.5), [])
+        #temp = pygame.transform.scale(temp, (w,h))
+        #surface.blit(temp, (0,0))
 
-        dirty = self.parallaxrender.draw(surface, rect, [])
-
+        self.parallaxrender.draw(surface, rect, [])
         dirty = self.maprender.draw(surface, rect, onScreen)
 
         if DEBUG:
@@ -173,7 +181,6 @@ class LevelCamera(Element):
 
         xx, yy = self.area.worldToPixel((x, y, z))
         return xx - self.extent.left, yy - self.extent.top
-
 
     def surfaceToWorld(self, (x, y)):
         """
