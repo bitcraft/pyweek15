@@ -331,4 +331,4 @@ class ViewPort(Frame):
         self.map_element.rect = self.rect
         self.packer.add(self.map_element)
 
-
+        self.camera = camera

@@ -82,9 +82,6 @@ class PhysicsGroup(context.Context):
             self.staticBodies.append(body)
             rects.append(self.toRect(body.bbox))
 
-        for r in rects:
-            print r
-
         self.geometry = quadtree.FastQuadTree(rects)
 
         self.setTimestep(timestep)

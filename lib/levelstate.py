@@ -84,9 +84,12 @@ class LevelState(context.Context):
     def activate(self):
         self.ui = LevelUI()
         vpm = ui.Frame(self.ui, ui.GridPacker())
-        vpm.addElement(ui.ViewPort(self.ui, self.area))
+        vp = ui.ViewPort(self.ui, self.area)
+        vpm.addElement(vp)
         self.ui.addElement(vpm)
         self.ui.rect = gfx.get_rect()
+
+        self.camera = vp.camera
 
 
     def update(self, time):
@@ -114,6 +117,7 @@ class LevelState(context.Context):
 
 
     def draw(self, surface):
+        self.camera.center(self.hero_body.bbox.center)
         self.ui.draw(surface)
 
 
@@ -191,4 +195,3 @@ class LevelState(context.Context):
                 y = y / 3.0
 
         self.player_vector = x, y*self.hero.move_speed, z
-

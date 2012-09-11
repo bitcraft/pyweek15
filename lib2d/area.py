@@ -154,7 +154,7 @@ class PlatformMixin(object):
 
 
     def worldToPixel(self, (x, y, z)):
-        return (y, z, x)
+        return (y*self.scaling, z*self.scaling)
 
 
     def worldToTile(self, (x, y, z)):
@@ -210,8 +210,7 @@ class PlatformArea(AbstractArea, PlatformMixin):
     """
 
     # real mars gravity is 3.69 m/s2
-    # we make it just .5 to make the game more fun by exagerating it
-    gravity = .5
+    gravity = 3.69
 
 
     def defaultPosition(self):
@@ -224,9 +223,6 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
     def __init__(self):
         AbstractArea.__init__(self)
-        self.bodies = {}
-        self.rawGeometry = []    # a list of bbox objects
-        self.physicsgroup = None
         self.exits    = {}
         self.geometry = {}       # geometry (for collisions) of each layer
         self.extent = None       # absolute boundries of the area
@@ -247,6 +243,13 @@ class PlatformArea(AbstractArea, PlatformMixin):
         self.flashes = []
         self.inUpdate = False
         self._removeQueue = []
+
+        # internal physics stuff
+        self.rawGeometry = []    # a list of bbox objects
+        self.bodies = {}
+        self.physicsgroup = None
+        # BUG: scaling doesn't work properly since pygame rects only store ints
+        self.scaling = 1.0 # MUST BE FLOAT (how many pixels are in a meter?)
 
 
     def load(self):
@@ -297,8 +300,19 @@ class PlatformArea(AbstractArea, PlatformMixin):
         self.bodies[thing] = body
 
         # physics groups cannot be modified once created.  just make a new one.
+        # physics 'engine' is tuned for 200 fps (read below):
+        #   5 updates per draw
+        #   40 draws per second
+        #   total 200 fps
+        #   1/200 = 0.005
+        # scaling is needed because by default 1 pixel is one meter
+        # we slow down the physics just a bit to make it more playable
         bodies = self.bodies.values()
-        self.physicsgroup = self.physicsGroupClass(1, 0.006, self.gravity, bodies, self.rawGeometry)
+        self.physicsgroup = self.physicsGroupClass(1.0/self.scaling,
+                                                   0.005,
+                                                   self.gravity,
+                                                   bodies,
+                                                   self.rawGeometry)
 
         self.changedAvatars = True
 

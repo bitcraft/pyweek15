@@ -331,6 +331,9 @@ class BufferedTilemapRenderer(GameObject):
         origClip = surface.get_clip()
         surface.set_clip(rect)
 
+        if self.queue:
+            self.flushQueue()
+
         # draw the entire map to the surface
         surblit(self.buffer, (-ox, -oy))
 

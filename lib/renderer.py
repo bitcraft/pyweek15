@@ -1,10 +1,14 @@
 from lib2d.tilemap import BufferedTilemapRenderer
 from lib2d.objects import AvatarObject, GameObject
+from lib2d.bbox import BBox
 from lib2d.ui import Element
 from lib2d import vec
 
 from pygame import Rect, draw
 import weakref
+
+
+DEBUG = 0
 
 
 def screenSorter(a):
@@ -30,14 +34,12 @@ class LevelCamera(Element):
         self.area = area
         self.set_extent(extent)
 
-        # axis swap
-        h, w = self.extent.size
+        w, h = self.extent.size
 
         # create a renderer for the map
         self.maprender = BufferedTilemapRenderer(area.tmxdata, (w, h))
         #self.maprender.center((w/2, h/2))
 
-        # translate tiled map coordinates to world coordinates (swap x & y)
         self.map_height = area.tmxdata.tilewidth * area.tmxdata.width
         self.map_width = area.tmxdata.tileheight * area.tmxdata.height
         self.blank = True
@@ -64,8 +66,9 @@ class LevelCamera(Element):
         """
 
         # our game world swaps the x and y axis, so we translate it here
-        x, y, w, h = extent
-        self.extent = Rect(y, x, h, w)
+        #x, y, w, h = extent
+        #self.extent = Rect(y, x, h, w)
+        self.extent = Rect(extent)
 
         self.half_width = self.extent.width / 2
         self.half_height = self.extent.height / 2
@@ -77,8 +80,9 @@ class LevelCamera(Element):
     def center(self, (x, y, z)):
         """
         center the camera on a world location.
-        expects to be in world coordinates (x & y axis swapped)
         """
+
+        x, y = self.area.worldToPixel((x, y, z))
 
         if self.map_height >= self.height:
             if y <= self.half_height:
@@ -100,9 +104,7 @@ class LevelCamera(Element):
             x = self.map_width / 2
 
         self.extent.center = (x, y)
-        x += self.extent.left       #hack
-        y += self.extent.top        #hack
-        self.maprender.center(self.worldToSurface((x,y,z)))
+        self.maprender.center((x, y))
 
 
     def clear(self, surface):
@@ -122,13 +124,28 @@ class LevelCamera(Element):
         for a in avatarobjects:
             bbox = self.area.getBBox(a)
             x, y, z, d, w, h = bbox
-            pos = self.worldToSurface((x, y, z))
-            onScreen.append((a.avatar.image, Rect(pos, (w, h)), 1, a, bbox))
+            x, y = self.area.worldToPixel((x, y, z))
+            x -= self.extent.left
+            y -= self.extent.top
+            onScreen.append((a.avatar.image, Rect((x, y), (w, h)), 1, a, bbox))
 
         # should not be sorted every frame
         onScreen.sort(key=screenSorter)
 
-        return self.maprender.draw(surface, rect, onScreen)
+        dirty = self.maprender.draw(surface, rect, onScreen)
+
+        if DEBUG:
+            for bbox in self.area.rawGeometry:
+                x, y, z, d, w, h = bbox
+                y -= self.extent.left
+                z -= self.extent.top
+                draw.rect(surface, (255,100,100), (y, z, w, h))
+
+            for i in onScreen:
+                draw.rect(surface, (100,255,100), i[1])
+
+
+        return dirty
 
 
     def worldToSurface(self, (x, y, z)):
@@ -139,8 +156,8 @@ class LevelCamera(Element):
         z is the vertical plane
         """
 
-        xx, yy = self.area.worldToPixel((x, y, z))[:2]
-        return xx - self.extent.top, yy - self.extent.left
+        xx, yy = self.area.worldToPixel((x, y, z))
+        return xx - self.extent.left, yy - self.extent.top
 
 
     def surfaceToWorld(self, (x, y)):

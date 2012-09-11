@@ -380,9 +380,8 @@ class ContextDriver(object):
                 # looks awkward?  because it is.  forcibly give small updates
                 # to each object so we don't draw too often.
 
-                time = time / 3.0
+                time = time / 5.0
                 #print time, self.target_fps / 10.0
-                #time = 30 / 10.0
 
                 currentState.update(time)
                 currentState = current_state()
@@ -393,4 +392,8 @@ class ContextDriver(object):
                 currentState.update(time)
                 currentState = current_state()
                 if not currentState == originalState: continue
-
+                currentState.update(time)
+                currentState = current_state()
+                if not currentState == originalState: continue
+                currentState.update(time)
+                currentState = current_state()

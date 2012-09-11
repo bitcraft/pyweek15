@@ -37,7 +37,8 @@ def build():
     npc.setName("Brahbrah")
     npc.setGUID(1)
     npc.size = (16,16,32)
-    npc.move_speed = .20
+    npc.move_speed = .5   #.025
+    npc.jump_strength = .5
     uni.add(npc)
 
 
