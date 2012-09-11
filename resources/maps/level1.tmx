@@ -34,7 +34,7 @@
  </tileset>
  <layer name="Background 1" width="49" height="45">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAA+2WXQ7CIAyAeeO+LtHom//P+qAn0hvMG+g5hMiypoEhDqTVknwBMrL0y9ZSpV5jrpVaaMV6iAON8UsOG8eKwTrkMHEcCawvhqvuY8P7mAMFWsMNxIz3IYeGEHfDA8SM9+LwXXBs4kDboau9FMF3V87a2iaeD9XO0HOcwyUcStO4OdWh9r8/lA//5LAmDMd8wD0eRwfc43HMh09ra+24pS7xd6hdN4d418E+q12HQuCaKQ7iIA7iUBtxoEGKg70Tl7q/H6muY9/hAHyprmMOU8PMM8Nvm+vM2H/L52B7xJ1h75lhH5nrzNg+NuRwMpw9M3xHrjMlHCjkq+S05LTkdB6HreZHN57Zw66JdCIAAA==
+   H4sIAAAAAAAAA+2XsRKCMAxA2fhfBj3dVNRZBv0i+QP8A535BOMdnLlctSgpTUqGd00hQ54lbW3zLGuBFbDuYq2YgwxScig7tgpi3zpUAuIrUKPa6FzDt9QAN1QbnWtwuAMPVBudm8O00NrMQbZDKRh6dnGuQzPy9+33yk/vaQ+HcJiCIgEHXNucHHaCGepQCILe8TQ60Duexn5IZW/9p6dj1zt3h9j75jeGOrj+Y0vhl3tr7FrNwRzMwRzMQabD60zc5O/zUWrsW4cTeiY19jksgKVjxLlcOVzfFnU4AEfHiHO5ckI5nIGLY8S5XDkhHCT0q/W09bT1NI/DXiF97U9O2LoLdCIAAA==
   </data>
  </layer>
  <layer name="Background 2" width="49" height="45">
@@ -55,7 +55,7 @@
    H4sIAAAAAAAAA+3Puw2AMBTF0BRvQX77r0JxlSZVGhQDPpIHcGuxV3ozHxh8YPCBwQcG8sNRqdsqjXx41uwD2Z8ezkpEPjB84WHkA4MPa1yVOh/WmH0g84HBBwYfGHxg8IHJBwYfGHxg8IHBB4bx4QbtF2aedCIAAA==
   </data>
  </layer>
- <layer name="Control" width="49" height="45" opacity="0.97">
+ <layer name="Control" width="49" height="45" visible="0" opacity="0.97">
   <properties>
    <property name="visible" value="false"/>
   </properties>

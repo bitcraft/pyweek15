@@ -45,6 +45,16 @@ class LevelCamera(Element):
         self.blank = True
 
         self.ao = self.refreshAvatarObjects()
+
+        # parallax hack below
+        import pytmx, lib2d.res
+
+        par_tmx = pytmx.tmxloader.load_pygame(
+                  lib2d.res.mapPath('parallax0.tmx'), force_colorkey=(128,128,0))
+
+        self.maprender.buffer.set_colorkey((128,128,128))
+
+        self.parallaxrender = BufferedTilemapRenderer(par_tmx, (w, h))
  
 
     def refreshAvatarObjects(self):
@@ -106,6 +116,8 @@ class LevelCamera(Element):
         self.extent.center = (x, y)
         self.maprender.center((x, y))
 
+        self.parallaxrender.center((x/2.0, y/2.0))
+
 
     def clear(self, surface):
         raise NotImplementedError
@@ -131,6 +143,9 @@ class LevelCamera(Element):
 
         # should not be sorted every frame
         onScreen.sort(key=screenSorter)
+
+
+        dirty = self.parallaxrender.draw(surface, rect, [])
 
         dirty = self.maprender.draw(surface, rect, onScreen)
 
