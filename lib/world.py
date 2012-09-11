@@ -8,6 +8,8 @@ from lib.level import Level
 from lib.entity import Entity
 from lib2d import res
 
+from items import *
+
 
 def build():
 
@@ -16,8 +18,9 @@ def build():
     uni.name = 'universe'
     uni.setGUID(0)
 
+    # =========================================================================
+    # our charming hero
 
-    # some characters
     avatar = Avatar([
         StaticAnimation(
             Image('astro0-helmet-stand.png', colorkey=True),
@@ -42,6 +45,56 @@ def build():
     uni.add(npc)
 
 
+    # =========================================================================
+    # some keys
+
+    # red
+    #avatar = Avatar([
+    #    StaticAnimation(
+    #        Image('red-key.png', colorkey=True),
+    #        'stand')
+    #])
+
+    avatar = Avatar([
+        Animation(
+            Image('red-key-spinning.png', colorkey=True),
+            'stand',
+            range(12), 1, 100)
+    ])
+
+    red_key = Key(avatar)
+    red_key.setName('Red Key')
+    red_key.setGUID(513)
+    uni.add(red_key)
+
+
+    # green
+    avatar = Avatar([
+        StaticAnimation(
+            Image('green-key.png', colorkey=True),
+            'stand')
+    ])
+
+    green_key = Key(avatar)
+    green_key.setName('Green Key')
+    green_key.setGUID(514)
+    uni.add(green_key)
+
+
+    # blue
+    avatar = Avatar([
+        StaticAnimation(
+            Image('blue-key.png', colorkey=True),
+            'stand')
+    ])
+
+    blue_key = Key(avatar)
+    blue_key.setName('Blue Key')
+    blue_key.setGUID(515)
+    uni.add(blue_key)
+
+
+    # =========================================================================
     # levels
     level = fromTMX(uni, "level1.tmx")
     level.setName("Level 1")
