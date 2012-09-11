@@ -79,6 +79,7 @@ class LevelState(context.Context):
         # awkward input handling
         self.wants_to_stop_on_landing = False
         self.input_changed = False
+        self.jumps = 0
 
 
     def activate(self):
@@ -178,8 +179,7 @@ class LevelState(context.Context):
                             thing.use(self.hero)
 
                 elif cmd == P1_ACTION2:
-                    if (not self.hero.held) and (not playing == "crouch"):
-                        self.hero_body.vel.z = -self.hero.jump_strength
+                    self.handle_jump()
 
                 elif cmd == P1_ACTION3:
                     for thing, body in getNearby(self.hero, 6):
@@ -195,3 +195,24 @@ class LevelState(context.Context):
                 y = y / 3.0
 
         self.player_vector = x, y*self.hero.move_speed, z
+
+
+    def handle_jump(self):
+        """
+        assume that the key was pressed and the player wants to jump
+        """
+
+        playing = self.hero.avatar.curAnimation.name
+
+        if self.hero_body.vel.z == 0:
+            self.jumps = 1
+            if (not self.hero.held) and (not playing == "crouch"):
+                self.hero_body.vel.z = -self.hero.jump_strength
+                self.hero_body.acc.z = 0.0
+        else:
+            # double jump
+            if self.jumps <= 1:
+                self.jumps += 2
+                self.hero_body.vel.z = -self.hero.jump_strength
+                self.hero_body.acc.z = 0.0
+

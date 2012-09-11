@@ -117,7 +117,7 @@ class PhysicsGroup(context.Context):
 
             if z > 0:
                 if not self.moveBody(body, (0, 0, z)):
-                    if abs(body.vel.z) > 2:
+                    if abs(body.vel.z) > 2.5:
                         body.acc.z = 0.0
                         body.vel.z = -body.vel.z * .2
                     else:
@@ -133,7 +133,7 @@ class PhysicsGroup(context.Context):
 
             if (round(body.vel.x, 4) ==
                 round(body.vel.y, 4) ==
-                round(body.vel.z, 4) == 0.0) and body.bbox.z == 0:
+                round(body.vel.z, 1) == 0.0) and body.bbox.z == 0:
                 self.sleeping.append(body)
 
 
