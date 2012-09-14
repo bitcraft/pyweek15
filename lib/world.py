@@ -96,7 +96,7 @@ def build():
 
     # =========================================================================
     # levels
-    level = fromTMX(uni, "level1.tmx")
+    level = fromTMX(uni, "level2.tmx")
     level.setName("Level 1")
     level.setGUID(5001)
 

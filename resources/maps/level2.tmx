@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="100" height="25" tilewidth="16" tileheight="16">
+ <tileset firstgid="1" source="../tilesets/controlset.tsx"/>
+ <tileset firstgid="1905" name="level0" tilewidth="16" tileheight="16">
+  <image source="../tilesets/level0.png" width="256" height="128"/>
+ </tileset>
+ <layer name="Background" width="100" height="25">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAA+3SuwmAMBRAUTv39TOBk1k4gCNYuIcIFhKMXeITTnEIhDxyCenapul+YA/QkLMEaKhtDtBQo62/DA/raUz2xttMTu7c2356fzqzBnj3nMhtpWwBGmq0TRT39X8BAAAAAAAAgL85ACyRi4EQJwAA
+  </data>
+ </layer>
+ <layer name="Tile Layer 4" width="100" height="25">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAA+3BAQ0AAADCoPdPbQ43oAAAAAAAAAAAAODfAC7KO00QJwAA
+  </data>
+ </layer>
+ <layer name="Foreground" width="100" height="25">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAA+3TsQmAQAxA0XS3/zhaWghaOoKT6AAenB4eKd4rA4GfIhHfTSViLv3zVmvH7t8ytG13w/7Q8Xbeaklwc02GttH/cSS4uSZD2+j/OBPcXJO5DQAAAAAAAACgxwVQE4CcECcAAA==
+  </data>
+ </layer>
+ <layer name="Control" width="100" height="25" visible="0" opacity="0.46">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAA+3OsQkAMAgAQR3B/ZfNBikE0eIOvv8I4Ke2B+Co1EgAAAAAAAAAQN8DfiudDRAnAAA=
+  </data>
+ </layer>
+</map>

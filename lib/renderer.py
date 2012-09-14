@@ -5,6 +5,7 @@ from lib2d.ui import Element
 from lib2d import vec
 
 from pygame import Rect, draw, Surface
+import pygame
 import weakref
 
 
@@ -40,8 +41,8 @@ class LevelCamera(Element):
         self.maprender = BufferedTilemapRenderer(area.tmxdata, (w, h))
         #self.maprender.center((w/2, h/2))
 
-        self.map_height = area.tmxdata.tilewidth * area.tmxdata.width
-        self.map_width = area.tmxdata.tileheight * area.tmxdata.height
+        self.map_width = area.tmxdata.tilewidth * area.tmxdata.width
+        self.map_height = area.tmxdata.tileheight * area.tmxdata.height
         self.blank = True
 
         self.ao = self.refreshAvatarObjects()
@@ -55,8 +56,11 @@ class LevelCamera(Element):
         # EPIC HACK GO
         i = lib2d.res.loadImage("../tilesets/level0.png")
         colorkey = i.get_at((0,0))[:3]
-        self.maprender.buffer.set_colorkey(colorkey)
-        self.parallaxrender = BufferedTilemapRenderer(par_tmx, (w, h))
+        #self.maprender.buffer.set_colorkey(colorkey)
+        #self.maprender.buffer.set_alpha(0)
+        self.maprender.buffer = self.maprender.buffer.convert_alpha()
+        #self.maprender.buffer.set_colorkey(colorkey)
+        #self.parallaxrender = BufferedTilemapRenderer(par_tmx, (w, h))
  
 
     def refreshAvatarObjects(self):
@@ -118,7 +122,7 @@ class LevelCamera(Element):
         self.extent.center = (x, y)
         self.maprender.center((x, y))
 
-        self.parallaxrender.center((x/2.0, y/2.0))
+        #self.parallaxrender.center((x/2.0, y/2.0))
 
 
     def clear(self, surface):
@@ -134,6 +138,28 @@ class LevelCamera(Element):
             self.blank = False
             self.maprender.blank = True
 
+
+        # mor HAX
+        #import pygame
+        w, h = surface.get_size()
+        #temp = Surface((w*1.5, h))
+        #self.parallaxrender.draw(temp, Rect(0,0,w*1.5,h*1.5), [])
+        #temp = pygame.transform.scale(temp, (w,h))
+        #surface.blit(temp, (0,0))
+
+
+
+        # our "lighting" mask
+        mask = pygame.Surface(self.maprender.buffer.get_size(), flags=pygame.SRCALPHA)
+        mask.fill((255,255,255,255))
+
+
+
+        #surface.blit(a, (0,0), special_flags=pygame.BLEND_RGBA_SUB)
+        #self.maprender.buffer = Surface(self.maprender.buffer.get_size(), flags=pygame.SRCALPHA)
+        #self.maprender.buffer.fill((0,0,0,0), (0,0,200,600), pygame.BLEND_RGBA_ADD)
+
+
         # quadtree collision testing would be good here
         for a in avatarobjects:
             bbox = self.area.getBBox(a)
@@ -143,19 +169,15 @@ class LevelCamera(Element):
             y -= self.extent.top
             onScreen.append((a.avatar.image, Rect((x, y), (w, h)), 1, a, bbox))
 
+            draw.circle(mask, (4,4,4,255), (int(x+w/2), int(y+h/2)), int(h*1.5))
+
         # should not be sorted every frame
         onScreen.sort(key=screenSorter)
 
-        # mor HAX
-        #import pygame
-        #w, h = surface.get_size()
-        #temp = Surface((w*1.5, h))
-        #self.parallaxrender.draw(temp, Rect(0,0,w*1.5,h*1.5), [])
-        #temp = pygame.transform.scale(temp, (w,h))
-        #surface.blit(temp, (0,0))
-
-        self.parallaxrender.draw(surface, rect, [])
+        #self.parallaxrender.draw(surface, rect, [])
         dirty = self.maprender.draw(surface, rect, onScreen)
+
+        surface.blit(mask, (0,0), special_flags=pygame.BLEND_RGBA_SUB)
 
         if DEBUG:
             for bbox in self.area.rawGeometry:
@@ -166,7 +188,6 @@ class LevelCamera(Element):
 
             for i in onScreen:
                 draw.rect(surface, (100,255,100), i[1])
-
 
         return dirty
 
