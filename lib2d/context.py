@@ -318,11 +318,11 @@ class ContextDriver(object):
         pygame.time.set_timer(event_flush, 20)
 
         # set an event to update the game state
-        #update_state = pygame.USEREVENT + 1
-        #pygame.time.set_timer(update_state, 30)
+        debug_output = pygame.USEREVENT + 1
+        pygame.time.set_timer(debug_output, 60)
 
         # make sure our custom events will be triggered
-        pygame.event.set_allowed([event_flush])
+        pygame.event.set_allowed([event_flush, debug_output])
 
         # some stuff to handle the command queue
         rawcmds = 0
@@ -356,6 +356,11 @@ class ContextDriver(object):
                     rawcmds = 0
                     checkedcmds = []
                     cmdlist = []
+
+
+                # do we flush input now?
+                elif event.type == debug_output:
+                    print "current FPS: \t{0:f}".format(clock.get_fps())
 
                 # back out of this state, or send event to the state
                 elif event.type == KEYDOWN:
