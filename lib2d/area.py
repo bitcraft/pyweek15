@@ -223,6 +223,9 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
     def __init__(self):
         AbstractArea.__init__(self)
+        self.subscribers = []
+
+
         self.exits    = {}
         self.geometry = {}       # geometry (for collisions) of each layer
         self.extent = None       # absolute boundries of the area
@@ -258,18 +261,6 @@ class PlatformArea(AbstractArea, PlatformMixin):
         self.tmxdata = pytmx.tmxloader.load_pygame(
                        self.mappath, force_colorkey=(128,128,0))
 
-        return 
-
-        # quadtree for handling collisions with exit tiles
-        rects = []
-        for guid, param in self.exits.items():
-            try:
-                x, y, l = param[0]
-            except:
-                continue
-
-            rects.append(ExitTile((x,y,
-                self.tmxdata.tilewidth, self.tmxdata.tileheight), guid))
 
         # get sounds from tiles
         for i, layer in enumerate(self.tmxdata.tilelayers):
@@ -282,6 +273,19 @@ class PlatformArea(AbstractArea, PlatformMixin):
         # get sounds from objects
         for i in [ i for i in self.getChildren() if i.sounds ]:
             self.soundFiles.extend(i.sounds)
+
+        return
+
+        # quadtree for handling collisions with exit tiles
+        rects = []
+        for guid, param in self.exits.items():
+            try:
+                x, y, l = param[0]
+            except:
+                continue
+
+            rects.append(ExitTile((x,y,
+                self.tmxdata.tilewidth, self.tmxdata.tileheight), guid))
 
         #self.exitQT = QuadTree(rects)
 
@@ -483,10 +487,11 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
         self.sounds = [ s for s in self.sounds if not s.done ]
         if filename not in [ s.filename for s in self.sounds ]:
+            self.sounds.append(Sound(filename, ttl))
             if thing:
                 pos = self.bodies[thing].bbox.center
-            emitSound.send(sender=self, filename=filename, position=pos)
-            self.sounds.append(Sound(filename, ttl))
+            for sub in self.subscribers:
+                sub.emitSound(filename, pos)
 
 
     def update(self, time):
@@ -497,6 +502,8 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
         for thing in self.bodies.keys():
             thing.avatar.update(time)
+            if thing.time_update:
+                thing.update(time)
 
         self.physicsgroup.update(time)
 
@@ -536,6 +543,10 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
 
     #  CLIENT API  --------------
+
+
+    def subscribe(self, subscriber):
+        self.subscribers.append(subscriber)
 
 
     def join(self, body0, body1):

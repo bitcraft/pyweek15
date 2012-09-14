@@ -11,6 +11,8 @@ import weakref
 
 DEBUG = 0
 
+parallax = True
+
 
 def screenSorter(a):
     return a[-1].x
@@ -47,20 +49,22 @@ class LevelCamera(Element):
 
         self.ao = self.refreshAvatarObjects()
 
-        # parallax hack below
-        import pytmx, lib2d.res
 
-        par_tmx = pytmx.tmxloader.load_pygame(
-                  lib2d.res.mapPath('parallax0.tmx'), force_colorkey=(128,128,0))
 
-        # EPIC HACK GO
-        i = lib2d.res.loadImage("../tilesets/level0.png")
-        colorkey = i.get_at((0,0))[:3]
-        #self.maprender.buffer.set_colorkey(colorkey)
         #self.maprender.buffer.set_alpha(0)
-        self.maprender.buffer = self.maprender.buffer.convert_alpha()
         #self.maprender.buffer.set_colorkey(colorkey)
-        #self.parallaxrender = BufferedTilemapRenderer(par_tmx, (w, h))
+
+        if parallax:
+            import pytmx, lib2d.res
+
+            # EPIC HACK GO
+            i = lib2d.res.loadImage("../tilesets/level0.png")
+            colorkey = i.get_at((0,0))[:3]
+            self.maprender.buffer.set_colorkey(colorkey)
+            #self.maprender.buffer = self.maprender.buffer.convert_alpha()
+            par_tmx = pytmx.tmxloader.load_pygame(
+            lib2d.res.mapPath('parallax0.tmx'), force_colorkey=(128,128,0))
+            self.parallaxrender = BufferedTilemapRenderer(par_tmx, (w, h))
  
 
     def refreshAvatarObjects(self):
@@ -122,7 +126,8 @@ class LevelCamera(Element):
         self.extent.center = (x, y)
         self.maprender.center((x, y))
 
-        #self.parallaxrender.center((x/2.0, y/2.0))
+        if parallax:
+            self.parallaxrender.center((x/2.0, y/2.0))
 
 
     def clear(self, surface):
@@ -151,7 +156,7 @@ class LevelCamera(Element):
 
         # our "lighting" mask
         mask = pygame.Surface(self.maprender.buffer.get_size(), flags=pygame.SRCALPHA)
-        mask.fill((255,255,255,255))
+        mask.fill((0,0,0,255))
 
 
 
@@ -169,15 +174,19 @@ class LevelCamera(Element):
             y -= self.extent.top
             onScreen.append((a.avatar.image, Rect((x, y), (w, h)), 1, a, bbox))
 
-            draw.circle(mask, (4,4,4,255), (int(x+w/2), int(y+h/2)), int(h*1.5))
+            draw.circle(mask, (1,1,1,96), (int(x+w/2), int(y+h/2)), int(h*3))
+            #draw.circle(mask, (1,1,1,128), (int(x+w/2), int(y+h/2)), int(h*1.5))
 
         # should not be sorted every frame
         onScreen.sort(key=screenSorter)
 
-        #self.parallaxrender.draw(surface, rect, [])
+        if parallax:
+            self.parallaxrender.draw(surface, rect, [])
+
         dirty = self.maprender.draw(surface, rect, onScreen)
 
-        surface.blit(mask, (0,0), special_flags=pygame.BLEND_RGBA_SUB)
+        #surface.blit(mask, (0,0), special_flags=pygame.BLEND_RGBA_SUB)
+        surface.blit(mask, (0,0))
 
         if DEBUG:
             for bbox in self.area.rawGeometry:

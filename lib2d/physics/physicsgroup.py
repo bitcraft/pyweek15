@@ -161,13 +161,27 @@ class PhysicsGroup(context.Context):
     def moveBody(self, body, (x, y, z), clip=True):
         body.bbox.move(x, y, z)
 
+        # test for collision with level geometry
         if self.testCollision(body.bbox):
-            if body.bbox[2] < 0:
-                body.bbox[2] = 0.0
+            if body.bbox[2] < -10:
+                body.bbox[2] = -10.0
                 body.bbox.move(-x, -y, 0)
             else:
                 body.bbox.move(-x, -y, -z)
             return False
+
+        else:
+            # test for collision with another object
+            # must do a spatial hash or oct tree or something here [later]
+            bbox = body.bbox
+            for other in (b for b in self.bodies if b is not body):
+                if bbox.collidebbox(other.bbox):
+                    if self.moveBody(other, (x, y, z)):
+                        return True
+                    else:
+                        body.bbox.move(-x, -y, -z)
+                        return False
+
         return True
 
 

@@ -77,6 +77,7 @@ class LevelState(context.Context):
         self.hero_body = self.area.getBody(self.hero)
 
         # awkward input handling
+        self.player_vector = [0,0,0]
         self.wants_to_stop_on_landing = False
         self.input_changed = False
         self.jumps = 0
@@ -92,6 +93,12 @@ class LevelState(context.Context):
 
         self.camera = vp.camera
 
+        for filename in self.area.soundFiles:
+            SoundMan.loadSound(filename)
+
+        # hackish pub/sub
+        self.area.subscribe(self)
+
 
     def update(self, time):
         self.area.update(time)
@@ -102,8 +109,8 @@ class LevelState(context.Context):
                 self.wants_to_stop_on_landing = False
                 self.hero_body.vel.y = 0
                 self.hero.avatar.play("stand")
-            else:
-                self.hero_body.vel.y = self.player_vector[1]
+
+        self.hero_body.vel.y = self.player_vector[1]
 
         if self.input_changed:
             self.input_changed = False
@@ -140,10 +147,7 @@ class LevelState(context.Context):
                         self.hero.avatar.play("uncrouch", loop=0)
 
                 elif cmd == P1_LEFT or cmd == P1_RIGHT:
-                    if self.hero_body.vel.z == 0:
                         y = 0
-                    else:
-                        self.wants_to_stop_on_landing = True
 
                 elif cmd == P1_ACTION3 and self.hero.held:
                     self.hero.parent.unjoin(hero_body, self.hero.held)
@@ -218,3 +222,15 @@ class LevelState(context.Context):
                 self.hero_body.vel.z = -self.hero.jump_strength
                 self.hero_body.acc.z = 0.0
 
+
+
+    def emitSound(self, filename, position):
+        x1, y1, z1 = position
+        x2, y2, z2 = self.hero_body.bbox.origin
+        d = math.sqrt(pow(x1-x2, 2) + pow(y1-y2, 2) + pow(z1-z2, 2))
+        try:
+            vol = 1/d * 20 
+        except ZeroDivisionError:
+            vol = 1.0
+        if vol > .02:
+            SoundMan.play(filename, volume=vol)

@@ -9,6 +9,7 @@ from lib.entity import Entity
 from lib2d import res
 
 from items import *
+from enemies import *
 
 
 def build():
@@ -39,7 +40,7 @@ def build():
 
     npc.setName("Brahbrah")
     npc.setGUID(1)
-    npc.size = (16,16,32)
+    npc.size = (16,12,32)
     npc.move_speed = .5   #.025
     npc.jump_strength = .5
     uni.add(npc)
@@ -92,6 +93,33 @@ def build():
     blue_key.setName('Blue Key')
     blue_key.setGUID(515)
     uni.add(blue_key)
+
+
+    # floating security bot
+    # =========================================================================
+
+    avatar = Avatar([
+        StaticAnimation(
+            Image('bot0-idle-0001.png', colorkey=True),
+            'fall'),
+        StaticAnimation(
+            Image('bot0-hover-0001.png', colorkey=True),
+            'hover'),
+    ])
+
+    npc = HoverBot(
+        avatar,
+        [],
+        Image('face0.png')
+    )
+
+    npc.setName("bot0")
+    npc.setGUID(516)
+    npc.size = (16,16,16)
+    npc.move_speed = .5   #.025
+    npc.jump_strength = .5
+    uni.add(npc)
+
 
 
     # =========================================================================

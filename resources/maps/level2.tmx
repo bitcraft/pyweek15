@@ -6,7 +6,7 @@
  </tileset>
  <layer name="Background" width="100" height="25">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAA+3SuwmAMBRAUTv39TOBk1k4gCNYuIcIFhKMXeITTnEIhDxyCenapul+YA/QkLMEaKhtDtBQo62/DA/raUz2xttMTu7c2356fzqzBnj3nMhtpWwBGmq0TRT39X8BAAAAAAAAgL85ACyRi4EQJwAA
+   H4sIAAAAAAAAA+3SwQmAMAxA0d6ctzPoYh4cwBE8uIcTCIK0TegLvPsPSV1KqQncARreHAEaetsDNGRsa+UM0JCxrZUrQEOPtjWpTDuM/heAmW0fje4EmMWfGd0+OzcAAAAAoLcHekHrwhAnAAA=
   </data>
  </layer>
  <layer name="Tile Layer 4" width="100" height="25">
@@ -21,7 +21,7 @@
  </layer>
  <layer name="Control" width="100" height="25" visible="0" opacity="0.46">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAA+3OsQkAMAgAQR3B/ZfNBikE0eIOvv8I4Ke2B+Co1EgAAAAAAAAAQN8DfiudDRAnAAA=
+   H4sIAAAAAAAAA+3UsQkAIAwEQHUDRxHcfzZbO5uACdzBtx/SfGvAy/x0d4+YnhXUA7deNNl/ACAHuw0AAAAAAFDTAb88VHYQJwAA
   </data>
  </layer>
 </map>

@@ -319,7 +319,7 @@ class ContextDriver(object):
 
         # set an event to update the game state
         debug_output = pygame.USEREVENT + 1
-        pygame.time.set_timer(debug_output, 60)
+        pygame.time.set_timer(debug_output, 2000)
 
         # make sure our custom events will be triggered
         pygame.event.set_allowed([event_flush, debug_output])
