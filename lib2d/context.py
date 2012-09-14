@@ -360,7 +360,7 @@ class ContextDriver(object):
 
                 # do we flush input now?
                 elif event.type == debug_output:
-                    print "current FPS: \t{0:f}".format(clock.get_fps())
+                    print "current FPS: \t{0:.1f}".format(clock.get_fps())
 
                 # back out of this state, or send event to the state
                 elif event.type == KEYDOWN:
