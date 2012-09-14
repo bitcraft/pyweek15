@@ -104,26 +104,16 @@ class LevelState(context.Context):
         self.area.update(time)
 
         #awkard ways of preventing player from sliding all over creation
-        if self.hero_body.vel.z == 0:
-            if self.wants_to_stop_on_landing:
-                self.wants_to_stop_on_landing = False
-                self.hero_body.vel.y = 0
+        if self.hero_body.vel.z == self.hero_body.vel.y == 0:
                 self.hero.avatar.play("stand")
 
-        self.hero_body.vel.y = self.player_vector[1]
 
         if self.input_changed:
             self.input_changed = False
 
-            if self.hero_body.vel.z == 0:
-                if self.hero_body.vel.y == 0:
-                    self.hero.avatar.play("stand")
-
-                elif abs(self.hero_body.vel.y) < 1.0:
-                    self.hero.avatar.play("walk")
-
-                #else:
-                #    self.hero.avatar.play("run")
+            self.hero_body.vel.y = self.player_vector[1]
+            if not self.hero_body.vel.y == 0:
+                self.hero.avatar.play("walk")
 
 
     def draw(self, surface):
