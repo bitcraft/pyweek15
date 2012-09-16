@@ -185,6 +185,16 @@ class PhysicsGroup(context.Context):
         return True
 
 
+    def testCollisionOther(self, body, bbox=None):
+        if bbox is None:
+            bbox = body.bbox
+        for other in (b for b in self.bodies if b is not body):
+            if bbox.collidebbox(other.bbox):
+                return True
+        return False
+
+
+
     def testCollision(self, bbox):
         # for adventure games
         if bbox[2] < 0:

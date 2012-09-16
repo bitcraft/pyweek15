@@ -140,22 +140,22 @@ class LevelState(context.Context):
                         y = 0
 
                 elif cmd == P1_ACTION3 and self.hero.held:
-                    self.hero.parent.unjoin(hero_body, self.hero.held)
-                    msg = self.text['ungrab'].format(self.hero.held.parent.name)
-                    self.hero.parent.emitText(msg, thing=self.hero)
+                    #self.hero.parent.unjoin(hero_body, self.hero.held)
+                    #msg = self.text['ungrab'].format(self.hero.held.parent.name)
+                    #self.hero.parent.emitText(msg, thing=self.hero)
                     self.hero.held = None
 
             # these actions will repeat as button is held down
             elif arg == BUTTONDOWN or arg == BUTTONHELD:
                 self.input_changed = True
-                if cmd == P1_UP:
-                    self.elevatorUp()
+                #if cmd == P1_UP:
+                #    self.elevatorUp()
 
-                elif cmd == P1_DOWN:
-                    if not self.elevatorDown():
-                        if self.area.grounded(self.area.getBody(self.hero)):
-                            if playing == "stand":
-                                self.hero.avatar.play("crouch", loop_frame=4)
+                #elif cmd == P1_DOWN:
+                #    if not self.elevatorDown():
+                #        if self.area.grounded(self.area.getBody(self.hero)):
+                #            if playing == "stand":
+                #                self.hero.avatar.play("crouch", loop_frame=4)
 
                 if cmd == P1_LEFT:
                     y = -1
@@ -169,21 +169,21 @@ class LevelState(context.Context):
             # these actions will not repeat if button is held
             if arg == BUTTONDOWN:
                 self.input_changed = True
-                if cmd == P1_ACTION1:
-                    for thing, body in getNearby(self.hero, 8):
-                        if hasattr(thing, "use"):
-                            thing.use(self.hero)
+                #if cmd == P1_ACTION1:
+                #    for thing, body in getNearby(self.hero, 8):
+                #        if hasattr(thing, "use"):
+                #            thing.use(self.hero)
 
-                elif cmd == P1_ACTION2:
+                if cmd == P1_ACTION2:
                     self.handle_jump()
 
-                elif cmd == P1_ACTION3:
-                    for thing, body in getNearby(self.hero, 6):
-                        if thing.pushable and not self.hero.held:
-                            self.hero.parent.join(hero_body, body)
-                            self.hero.held = body
-                            msg = self.text['grab'].format(thing.name) 
-                            self.hero.parent.emitText(msg, thing=self.hero)
+                #elif cmd == P1_ACTION3:
+                #    for thing, body in getNearby(self.hero, 6):
+                #        if thing.pushable and not self.hero.held:
+                #            self.hero.parent.join(hero_body, body)
+                #            self.hero.held = body
+                #            msg = self.text['grab'].format(thing.name) 
+                #            self.hero.parent.emitText(msg, thing=self.hero)
 
 
         if (not x == 0) or (not y == 0) or (not z == 0):
@@ -200,7 +200,12 @@ class LevelState(context.Context):
 
         playing = self.hero.avatar.curAnimation.name
 
-        if self.hero_body.vel.z == 0:
+        bbox = self.hero_body.bbox.copy()
+        bbox.move(0,0,1)
+
+        if (self.area.physicsgroup.testCollision(bbox) or
+            self.area.physicsgroup.testCollisionOther(self.hero_body, bbox)):
+
             self.jumps = 1
             if (not self.hero.held) and (not playing == "crouch"):
                 self.hero_body.vel.z = -self.hero.jump_strength
