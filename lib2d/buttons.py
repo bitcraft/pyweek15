@@ -21,6 +21,12 @@ BUTTON_HI_KICK   = 32
 
 BUTTON_GUARD = 2048
 
+# virutal
+STATE_VIRTUAL = 1024
+FALL_DAMAGE   = 2048
+ANIMATION_FINISHED = 1
+
+
 
 # misc
 BUTTON_NULL    = 0			# virtual button to handle state changes w/hold buttons
@@ -58,5 +64,6 @@ P2_LEFT     = 4
 P2_RIGHT    = 8
 P2_ACTION1  = 16
 P2_ACTION2  = 32
+
 
 KEYNAMES = {1:"up", 2:"down", 4:"left", 8:"right", 16:"action0", 32:"action1"}

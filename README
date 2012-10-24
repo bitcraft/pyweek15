@@ -1,58 +1,8 @@
-PyWeek #15 Entry
-
-Ideas for game:
-
-	Metroidvania adventure.
-
-	I'm reusing portions of my last entry for pyweek:
-	https://github.com/bitcraft/pyweek14
+Platforming Game in Python
 
 
+Goals of project:
 
-Story:
-    you've been dispatched to mars to investigate a deadly disease outbreak
-    on the colony there.
-
-    when you arrive, you are informed of a strange object found nearby and
-    you are sent outside the colony to investigate it.
-
-    when it is found, you realize that it is a door and you step through it.
-
-    inside is a small city, covered with rust.  it is protected by a giant
-    metallic plate and you realize that the martian surface around the base
-    is simply sitting on top of the plate.
-
-    you investigate the ruins and uncover secrets behind it
-
-
-
-Goals:
-
-    the game will have three possible endings:
-
-        1. you die and the secret is lost
-        2. you go as far as you can, but never can figure out what it is
-        3. you uncover evidence that [ spoiler censored! ]
-
-
-Mechanics:
-
-    the game will feature realistic physics (pure python) and low gravity
-    the player can collect a jetpack, gun, and atmosphere generator
-    portions of the ancient city can be activated to open new rooms
-    focus will be on level design and controlling your player in awkward gravity
-    the player can collect relics from the city
-
-
-possible enemies:
-
-    robots are placed throughout the rooms and may be activated and will
-    attempt to destroy the player.
-
-    traps such as rusted floors and broken stairs may kill the player.
-
-    running and shooting may become an option with a item found 3/4 of the way
-    through the game.
-
+	Use fsa.py for clean input and possible use for ai agents
 
 

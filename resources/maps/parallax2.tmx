@@ -34,7 +34,7 @@
  </tileset>
  <layer name="Background 1" width="25" height="25">
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAAAytiZ2AoGsXDChcDcQkQl0IxMWqQ+cSYS4x6avlhoMNzsMTlQLtlKLhrMGD0sBksYVWM5pbB4KahitHDcqDdQys/Dmf/YYvHoehXAHyaNaTECQAA
+   H4sIAAAAAAAAA8VWQQ7CMAzjtge3AcEVCX4A36VIRDLGybIxwcGKmnbJ4jjr+rTbtReOA6eBDj6DdRfwM2of40W+RpZjNcphcM4gHp7BHPuBQ/DuVWCONn3WcRm4ilq2yvFc3wbutM8cOicdrMpxBijfN8h6voYXpbeKrhBGz6Ou2J/p1H2K2+hdVb/W1LGEO0viWZJjDj5LzKHqb8aV8vmzPkvZfGT8ZZz52meJ/f+ejy1mI4qn+lHVFN4BUY5KP7L+88xU63BNsq1ylmnX165JtqoupbnKDLom2Wbx1Zz/Qrt436h7i/s4pynFi8phQdzq9zjqb6Td6L/Gpve7Vu1numqEJbOo6ngAViJ8gsQJAAA=
   </data>
  </layer>
 </map>

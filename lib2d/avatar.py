@@ -22,15 +22,13 @@ along with lib2d.  If not, see <http://www.gnu.org/licenses/>.
 from objects import GameObject
 import res, animation
 from pygame.transform import flip
-
+import itertools
 
 
 class Avatar(GameObject):
     """
     Avatar is a sprite-like class that supports multiple animations, animation
-    controls, directions, is pickleable, and doesn't require images to be
-    loaded.
-
+    controls, directions, is pickleable, and has lazy image loading. 
     update must be called occasionally for animations and rotations to work.
     """
 
@@ -59,7 +57,8 @@ class Avatar(GameObject):
 
 
     def _updateCache(self):
-        angle = self.getOrientation()
+        #angle = self.getOrientation()
+        angle = 0
         self.curImage = self.curAnimation.getImage(self.curFrame, angle) 
         if self.flip: self.curImage = flip(self.curImage, 1, 0)
 
@@ -95,13 +94,12 @@ class Avatar(GameObject):
             try:
                 self.ttl, self.curFrame = next(self.iterator)
             except StopIteration:
-                if self.loop > 0:
-                    self.looped += 1
-                    self.iterator = iter(self.curAnimation)
-                    self.ttl, self.curFrame = next(self.iterator)
-                elif self.loop < 0:
-                    self.iterator = iter(self.curAnimation)
-                    self.ttl, self.curFrame = next(self.iterator)
+                if self.callback:
+                    self.callback[0](*self.callback[1], **self.callback[2])
+
+            # needed to handle looping
+            if self.ttl < 0:
+                return
 
  
     def isPlaying(self, name):
@@ -112,7 +110,7 @@ class Avatar(GameObject):
         return False
 
 
-    def play(self, name=None, loop=-1):
+    def play(self, name=None, loop=-1, loop_frame=None, callback=None):
         if isinstance(name, (animation.Animation, animation.StaticAnimation)):
             if name == self.curAnimation: return
             self.curAnimation = name
@@ -123,11 +121,26 @@ class Avatar(GameObject):
             if temp == self.curAnimation: return
             self.curAnimation = temp
 
-        self.looped = 0
+        self.callback = (callback, [], {})
         self.loop = loop
+        self.looped = 0
         self.timer  = 0
 
-        self.iterator = iter(self.curAnimation)
+        if loop >= 0:
+            self.iterator = itertools.chain.from_iterable(
+                                itertools.repeat(
+                                   tuple(iter(self.curAnimation)), loop + 1))
+            
+        else:
+            if loop_frame:
+                self.iterator = itertools.chain(
+                                    iter(self.curAnimation),
+                                    itertools.cycle(((-1, loop_frame),))
+                                )
+
+            else:
+                self.iterator = itertools.cycle(iter(self.curAnimation))
+
         self.ttl, self.curFrame = next(self.iterator)
 
 

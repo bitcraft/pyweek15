@@ -24,15 +24,18 @@ import pygame
 
 
 """
-this provides an abstraction between pygame's input's and
-input handling.  events will be translated into a format
-that the game will handle.  this provides an way to deal
-with multiple inputs and reconfiguring keys at runtime.
+this provides an abstraction between pygame's input's and game input handling.
+events will be translated into a format that the game will handle.
 
 provides a couple nice features:
-    input can be reconfigured during runtime, without chaning game code
+    inputs can be reconfigured during runtime without changing game code
     inputs can be changed during runtime: want a joystick, no problem
-    input commands keep track of buttons being held, as well
+    input commands keep track of buttons being held as well
+    axises are corrected so that axises act 'naturally' if pressed in
+        opposite directions ie: left and right pressed simultaneously
+
+    mouse coordinates are translated to screen coordinates if screen is scaled
+    mouse can tell if being clicked or dragged
 """
 
 import gfx

@@ -87,12 +87,6 @@ class GameObject(object):
         #return self._parent.getPosition(what)
 
 
-    def getOrientation(self, what=None):
-        # override this for objects that can contain other types
-        if what is None: what = self._parent
-        return self._parent.getOrientation(what)
-
-
     def getSize(self, what=None):
         # override this for objects that can contain other types
         if what is None: what = self._parent

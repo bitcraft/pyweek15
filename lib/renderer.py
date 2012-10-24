@@ -8,6 +8,8 @@ from pygame import Rect, draw, Surface
 import pygame
 import weakref
 
+from pymunk.pygame_util import draw_space, from_pygame, to_pygame
+
 
 DEBUG = 0
 
@@ -41,18 +43,9 @@ class LevelCamera(Element):
 
         # create a renderer for the map
         self.maprender = BufferedTilemapRenderer(area.tmxdata, (w, h))
-        #self.maprender.center((w/2, h/2))
-
         self.map_width = area.tmxdata.tilewidth * area.tmxdata.width
         self.map_height = area.tmxdata.tileheight * area.tmxdata.height
         self.blank = True
-
-        self.ao = self.refreshAvatarObjects()
-
-
-
-        #self.maprender.buffer.set_alpha(0)
-        #self.maprender.buffer.set_colorkey(colorkey)
 
         if parallax:
             import pytmx, lib2d.res
@@ -66,10 +59,6 @@ class LevelCamera(Element):
             lib2d.res.mapPath('parallax0.tmx'), force_colorkey=(128,128,0))
             self.parallaxrender = BufferedTilemapRenderer(par_tmx, (w, h))
  
-
-    def refreshAvatarObjects(self):
-        return [ i for i in self.area.bodies.keys() if hasattr(i, "avatar")]
-
 
     # HACK
     def getAvatarObjects(self):
@@ -97,12 +86,12 @@ class LevelCamera(Element):
         self.zoom = 1.0
 
 
-    def center(self, (x, y, z)):
+    def center(self, (x, y)):
         """
         center the camera on a world location.
         """
 
-        x, y = self.area.worldToPixel((x, y, z))
+        x, y = self.area.worldToPixel((x, y))
 
         if self.map_height >= self.height:
             if y <= self.half_height:
@@ -137,56 +126,26 @@ class LevelCamera(Element):
     def draw(self, surface, rect):
         onScreen = []
 
-        avatarobjects = self.refreshAvatarObjects()
-
         if self.blank:
             self.blank = False
             self.maprender.blank = True
 
-
-        # mor HAX
-        #import pygame
-        w, h = surface.get_size()
-        #temp = Surface((w*1.5, h))
-        #self.parallaxrender.draw(temp, Rect(0,0,w*1.5,h*1.5), [])
-        #temp = pygame.transform.scale(temp, (w,h))
-        #surface.blit(temp, (0,0))
-
-
-
-        # our "lighting" mask
-        mask = pygame.Surface(self.maprender.buffer.get_size(), flags=pygame.SRCALPHA)
-        mask.fill((0,0,0,255))
-
-
-
-        #surface.blit(a, (0,0), special_flags=pygame.BLEND_RGBA_SUB)
-        #self.maprender.buffer = Surface(self.maprender.buffer.get_size(), flags=pygame.SRCALPHA)
-        #self.maprender.buffer.fill((0,0,0,0), (0,0,200,600), pygame.BLEND_RGBA_ADD)
-
-
         # quadtree collision testing would be good here
-        for a in avatarobjects:
-            bbox = self.area.getBBox(a)
-            x, y, z, d, w, h = bbox
-            x, y = self.area.worldToPixel((x, y, z))
+        for entity, body in self.area.bodies.items():
+            x, y = body.position
+            x, y = self.area.worldToPixel((x, y))
             x -= self.extent.left
             y -= self.extent.top
-            onScreen.append((a.avatar.image, Rect((x, y), (w, h)), 1, a, bbox))
-
-            draw.circle(mask, (1,1,1,96), (int(x+w/2), int(y+h/2)), int(h*3))
-            #draw.circle(mask, (1,1,1,128), (int(x+w/2), int(y+h/2)), int(h*1.5))
+            w, h = entity.avatar.image.get_size()
+            onScreen.append((entity.avatar.image, Rect((x, y), (w, h)), 1))
 
         # should not be sorted every frame
-        onScreen.sort(key=screenSorter)
+        #onScreen.sort(key=screenSorter)
 
         if parallax:
             self.parallaxrender.draw(surface, rect, [])
 
         dirty = self.maprender.draw(surface, rect, onScreen)
-
-        #surface.blit(mask, (0,0), special_flags=pygame.BLEND_RGBA_SUB)
-        surface.blit(mask, (0,0))
 
         if DEBUG:
             for bbox in self.area.rawGeometry:

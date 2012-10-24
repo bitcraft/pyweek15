@@ -1,14 +1,12 @@
 import res
 from pathfinding.astar import Node
 from objects import GameObject
-from quadtree import QuadTree, FrozenRect
 from pygame import Rect
-from bbox import BBox
 from pathfinding import astar
 from lib2d.signals import *
-from vec import Vec2d, Vec3d
-import physics
 import math
+
+import pymunk
 
 cardinalDirs = {"north": math.pi*1.5, "east": 0.0, "south": math.pi/2, "west": math.pi}
 
@@ -35,27 +33,6 @@ class PathfindingSentinel(object):
             self.dy = self.speed * sin(theta) 
 
         self.area.movePosition(self.body, (seldf.dx, self.dy, 0))
-
-
-class CollisionError(Exception):
-    pass
-
-
-class ExitTile(FrozenRect):
-    def __init__(self, rect, exit):
-        FrozenRect.__init__(self, rect)
-        self._value = exit
-
-    def __repr__(self):
-        return "<ExitTile ({}, {}, {}, {}): {}>".format(
-            self._left,
-            self._top,
-            self._width,
-            self._height,
-            self._value)
-
-
-
 
 
 class AbstractArea(GameObject):
@@ -130,7 +107,13 @@ class PlatformMixin(object):
     Mixin class is suitable for platformer games
     """
 
-    physicsGroupClass = physics.PlatformerPhysicsGroup
+    def defaultPosition(self):
+        return 0,0
+
+
+    def translate(self, (x, y, z)):
+        return y, z
+
 
     def toRect(self, bbox):
         # return a rect that represents the object on the zy plane
@@ -153,8 +136,8 @@ class PlatformMixin(object):
         body.acc += Vec2d(y, z)
 
 
-    def worldToPixel(self, (x, y, z)):
-        return (y*self.scaling, z*self.scaling)
+    def worldToPixel(self, (x, y)):
+        return (x*self.scaling, y*self.scaling)
 
 
     def worldToTile(self, (x, y, z)):
@@ -166,10 +149,11 @@ class PlatformMixin(object):
 
 
 class PlatformArea(AbstractArea, PlatformMixin):
-    """3D environment for things to live in.
+    """
+    2D environment for things to live in.
     Includes basic pathfinding, collision detection, among other things.
 
-    Uses a quadtree for fast collision testing with level geometry.
+    Physics simulation is handled by pymunk/chipmunk 2d physics.
 
     Bodies can exits in layers, just like maps.  since the y values can
     vary, when testing for collisions the y value will be truncated and tested
@@ -206,15 +190,14 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
     REWRITE: FUNCTIONS HERE SHOULD NOT CHANGE STATE
 
+    Handle mapping of physics bodies to game entities
+
+
     NOTE: some of the code is specific for maps from the tmxloader
     """
 
-    # real mars gravity is 3.69 m/s2
-    gravity = 3.69
+    gravity = (0, 50)
 
-
-    def defaultPosition(self):
-        return BBox((0,0,0,1,1,1))
 
     def defaultSize(self):
         # TODO: this cannot be hardcoded!
@@ -225,34 +208,31 @@ class PlatformArea(AbstractArea, PlatformMixin):
         AbstractArea.__init__(self)
         self.subscribers = []
 
-
         self.exits    = {}
-        self.geometry = {}       # geometry (for collisions) of each layer
-        self.extent = None       # absolute boundries of the area
         self.messages = []
-        self.time = 0
         self.tmxdata = None
         self.mappath = None
         self.sounds = []
         self.soundFiles = []
         self.inUpdate = False
+        self.drawables = []         # HAAAAKCCCCKCK
+        self.changedAvatars = True  #hack
+        self.time = 0
+        self.music_pos = 0
         self._addQueue = []
         self._removeQueue = []
         self._addQueue = []
-        self.drawables = []      # HAAAAKCCCCKCK
-        self.changedAvatars = True #hack
-        self.music_pos = 0
 
         self.flashes = []
         self.inUpdate = False
         self._removeQueue = []
 
         # internal physics stuff
-        self.rawGeometry = []    # a list of bbox objects
+        self.geometry = {}
         self.bodies = {}
         self.physicsgroup = None
-        # BUG: scaling doesn't work properly since pygame rects only store ints
-        self.scaling = 1.0 # MUST BE FLOAT (how many pixels are in a meter?)
+        self.extent = None          # absolute boundaries of the area
+        self.scaling = 1.0          # MUST BE FLOAT 
 
 
     def load(self):
@@ -260,7 +240,6 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
         self.tmxdata = pytmx.tmxloader.load_pygame(
                        self.mappath, force_colorkey=(128,128,0))
-
 
         # get sounds from tiles
         for i, layer in enumerate(self.tmxdata.tilelayers):
@@ -274,174 +253,67 @@ class PlatformArea(AbstractArea, PlatformMixin):
         for i in [ i for i in self.getChildren() if i.sounds ]:
             self.soundFiles.extend(i.sounds)
 
-        return
+        self.space = pymunk.Space()
+        self.space.gravity = self.gravity
 
-        # quadtree for handling collisions with exit tiles
-        rects = []
-        for guid, param in self.exits.items():
-            try:
-                x, y, l = param[0]
-            except:
-                continue
+        # will not work with multiple layers
+        geometry = []
+        for layer, rects in self.geometry.items():
+            for rect in rects:
+                temp = rect.topleft, rect.topright, 5
+                body = pymunk.Segment(self.space.static_body, *temp)
+                body.friction = 1.0
+                body.group = 1
+                geometry.append(body)
 
-            rects.append(ExitTile((x,y,
-                self.tmxdata.tilewidth, self.tmxdata.tileheight), guid))
+        self.space.add(geometry)
 
-        #self.exitQT = QuadTree(rects)
+        for entity, body in self.bodies.items():
+            shape = pymunk.Poly.create_box(body, size=(32,64))
+            self.space.add(body, shape)
 
 
-    def add(self, thing, pos=None):
-        AbstractArea.add(self, thing)
+    def add(self, entity, pos=None):
+        AbstractArea.add(self, entity)
 
         if pos is None:
             pos = self.defaultPosition().origin
+        else:
+            pos = self.translate(pos)
 
-        # hackish stuff to allow the BBox class to properly subclass built-in
-        # list class (improves speed when translating bboxes)
-        l = list(pos)
-        l.extend(thing.size)
-        body = physics.Body3(BBox(l), (0,0,0), (0,0,0), 0)
-        self.bodies[thing] = body
+        body = pymunk.Body(5, pymunk.inf)
+        body.position = pos
+        self.bodies[entity] = body
 
-        # physics groups cannot be modified once created.  just make a new one.
-        # physics 'engine' is tuned for 200 fps (read below):
-        #   5 updates per draw
-        #   40 draws per second
-        #   total 200 fps
-        #   1/200 = 0.005
-        # scaling is needed because by default 1 pixel is one meter
-        # we slow down the physics just a bit to make it more playable
-        bodies = self.bodies.values()
-        self.physicsgroup = self.physicsGroupClass(1.0/self.scaling,
-                                                   0.005,
-                                                   self.gravity,
-                                                   bodies,
-                                                   self.rawGeometry)
+
 
         self.changedAvatars = True
 
 
-    def remove(self, thing):
+    def remove(self, entity):
         if self.inUpdate:
-            self._removeQueue.append(thing)
+            self._removeQueue.append(entity)
             return
 
-        AbstractArea.remove(self, thing)
-        del self.bodies[thing]
+        AbstractArea.remove(self, entity)
+        del self.bodies[entity]
         self.changedAvatars = True
 
         # hack
         try:
-            self.drawables.remove(thing)
+            self.drawables.remove(entity)
         except (ValueError, IndexError):
             pass
 
 
-    def movePosition(self, body, (x, y, z), push=True, caller=None, \
-                     suppress_warp=False, clip=True):
-
-        return
-
-        self._sendBodyMove(body, caller=caller)
-
-        bbox2 = newbbox.move(0,0,32)
-        tilePos = self.worldToTile(bbox2.topcenter)
-        try:
-            # emit sounds from bodies walking on them
-            prop = self.tmxdata.getTileProperties(tilePos)
-        except:
-            pass
-
-        else:
-            if prop is not None:
-                name = prop.get('walkSound', False)
-                if name:
-                    self.emitSound(name, newbbox.bottomcenter, ttl=600)
-
-        try:
-            # test for collisions with exits
-            exits = self.exitQT.hit(self.toRect(newbbox))
-        except AttributeError:
-            exits = []
-
-
-        if exits and not suppress_warp:
-            # warp the player
-            exit = exits.pop()
-
-            # get the position and guid of the exit tile of the other map
-            fromExit, guid = self.exits[exit.value]
-            if guid is not None: 
-                # used to correctly align sprites
-                fromTileBBox = BBox(fromExit, (16,16,1))
-                tx, ty, tz = fromTileBBox.origin
-            
-                # get the GUID of the map we are warping to
-                dest = self.getRoot().getChildByGUID(guid)
-                toExit, otherExit = dest.exits[exit.value]
-
-                bx, by, bz = newbbox.origin
-                ox, oy, oz = originalbbox.origin
-                bz = 0
-
-                # determine wich direction we are traveling through the exit
-                angle = math.atan2(oy-by, ox-bx)
-
-                # get the position of the tile in out new area
-                newx, newy, newz = toExit
-
-                # create a a bbox to position the object in the new area
-                dx = 16 / 2 - newbbox.depth / 2
-                dy = 16 / 2 - newbbox.width / 2
-                dz = 0
-
-                exitbbox = BBox((newx+dx, newy+dy, newz+dz), newbbox.size)
-                face = self.getOrientation(body)
-                dest.add(body)
-                dest.setBBox(body, exitbbox)
-                dest.setOrientation(body, face)
-                
-                # when changing the destination, we do a bunch of moves first
-                # to push objects out of the way from the door...if possible
-                dx = round(math.cos(angle))
-                dy = round(math.sin(angle))
-                dz = 0
-                dest.movePosition(body, (dx*20, dy*20, dz*20), False, \
-                                  suppress_warp=True, clip=False)
-
-                for x in range(40):
-                    dest.movePosition(body, (-dx, -dy, -dz), True, \
-                                      suppress_warp=True, clip=False)
-
-                # send a signal that this body is warping
-                bodyWarp.send(sender=self, body=body, destination=dest,
-                              caller=caller)
-
-        return True 
-
-
-    def getBody(self, thing):
-        return self.bodies[thing]
-
-
-    def setOrientation(self, thing, angle):
-        """ Set the angle the object is facing.  Expects radians. """
-
-        if isinstance(angle, str):
-            try:
-                angle = cardinalDirs[angle]
-            except:
-                raise
-
-        self.getBody(thing).o = angle
+    def getBody(self, entity):
+        return self.bodies[entity]
 
 
     def setLayerGeometry(self, layer, rects):
         """
         set the layer's geometry.  expects a list of rects.
         """
-
-        import quadtree
 
         self.geometry[layer] = rects
 
@@ -471,25 +343,25 @@ class PlatformArea(AbstractArea, PlatformMixin):
         return path
 
 
-    def emitText(self, text, pos=None, thing=None):
-        if pos==thing==None:
-            raise ValueError, "emitText requires a position or thing"
+    def emitText(self, text, pos=None, entity=None):
+        if pos==entity==None:
+            raise ValueError, "emitText requires a position or entity"
 
-        if thing:
-            pos = self.bodies[thing].bbox.center
+        if entity:
+            pos = self.bodies[entity].bbox.center
         emitText.send(sender=self, text=text, position=pos)
         self.messages.append(text)
 
 
-    def emitSound(self, filename, pos=None, thing=None, ttl=350):
-        if pos==thing==None:
-            raise ValueError, "emitSound requires a position or thing"
+    def emitSound(self, filename, pos=None, entity=None, ttl=350):
+        if pos==entity==None:
+            raise ValueError, "emitSound requires a position or entity"
 
         self.sounds = [ s for s in self.sounds if not s.done ]
         if filename not in [ s.filename for s in self.sounds ]:
             self.sounds.append(Sound(filename, ttl))
-            if thing:
-                pos = self.bodies[thing].bbox.center
+            if entity:
+                pos = self.bodies[entity].bbox.center
             for sub in self.subscribers:
                 sub.emitSound(filename, pos)
 
@@ -500,31 +372,45 @@ class PlatformArea(AbstractArea, PlatformMixin):
 
         [ sound.update(time) for sound in self.sounds ]
 
-        for thing in self.bodies.keys():
-            thing.avatar.update(time)
-            if thing.time_update:
-                thing.update(time)
+        for entity, body in self.bodies.items():
+            grounding = {
+                'normal' : pymunk.Vec2d.zero(),
+                'penetration' : pymunk.Vec2d.zero(),
+                'impulse' : pymunk.Vec2d.zero(),
+                'position' : pymunk.Vec2d.zero(),
+                'body' : None
+            }
+                    
+            def f(arbiter):
+                n = -arbiter.contacts[0].normal
+                if n.y > grounding['normal'].y:
+                    grounding['normal'] = n
+                    grounding['penetration'] = -arbiter.contacts[0].distance
+                    grounding['body'] = arbiter.shapes[1].body
+                    grounding['impulse'] = arbiter.total_impulse
+                    grounding['position'] = arbiter.contacts[0].position
+            body.each_arbiter(f)
+            entity.avatar.update(time)
 
-        self.physicsgroup.update(time)
+            if grounding['body'] != None:
+                friction = -(body.velocity.y/0.05)/self.space.gravity.y
+
+            if grounding['body'] != None and abs(grounding['normal'].x/grounding['normal'].y) < friction:
+                entity.grounded = True
+            else:
+                entity.grounded = False
+
+            if entity.time_update:
+                entity.update(time)
+
+        self.space.step(1.0/60)
 
         # awkward looping allowing objects to be added/removed during update
         self.inUpdate = False
-        [ self.add(thing) for thing in self._addQueue ] 
+        [ self.add(entity) for entity in self._addQueue ] 
         self._addQueue = []
-        [ self.remove(thing) for thing in self._removeQueue ] 
+        [ self.remove(entity) for entity in self._removeQueue ] 
         self._removeQueue = []
-
-
-    def setExtent(self, rect):
-        self.extent = Rect(rect)
-
-
-    def getPositions(self):
-        return [ (o, b.origin) for (o, b) in self.bboxes.items() ]
-
-
-    def getOldPosition(self, body):
-        return self._oldbboxes[body]
 
 
     def _sendBodyMove(self, body, caller, force=None):
@@ -532,16 +418,6 @@ class PlatformArea(AbstractArea, PlatformMixin):
         bodyAbsMove.send(sender=self, body=body, position=position, caller=caller, force=force)
 
     
-    def warpBody(self):
-        """
-        move a body to another area using an exit tile.
-        objects on or around the tile will be push out of the way
-        if objects cannot be pushed, then the warp will fail
-        """
-        pass
-
-
-
     #  CLIENT API  --------------
 
 
@@ -549,64 +425,10 @@ class PlatformArea(AbstractArea, PlatformMixin):
         self.subscribers.append(subscriber)
 
 
-    def join(self, body0, body1):
-        self.joins.append((body0, body1))
-
-
-    def unjoin(self, body0, body1):
-        self.joins.remove((body0, body1))
-
-
-    def getRect(self, thing):
-        return self.toRect(self.bodies[thing].bbox)
-
-
-    def isGrounded(self, thing):
-        return self.grounded(self.bodies[thing])
-
-
-    def getBBox(self, thing):
-        return self.bodies[thing].bbox
-
-
-    def setBBox(self, thing, bbox):
-        """ Attempt to set a bodies bbox.  Returns True if able. """
-
-        if not isinstance(bbox, BBox):
-            bbox = BBox(bbox)
-
-        body = self.getBody(thing)
-        body.oldbbox = body.bbox
-        body.bbox = bbox
-
-
-    def getOrientation(self, thing):
-        """ Return the angle thing is facing in radians """
-        return self.bodies[thing].o
-
-
-    def setPosition(self, thing, origin):
-        body = self.bodies[thing]
-        body.bbox = BBox(origin, body.bbox.size)
-
-
-    def getSize(self, thing):
+    def getSize(self, entity):
         """ Return 3d size of the object """
-        return self.bodies[thing].bbox.size
+        return self.bodies[entity].bbox.size
 
 
-    def getPosition(self, thing):
-        """ for clients to find position in world of things, not bodies """
-        return self.bodies[thing].bbox.origin
-
-
-    def getBody(self, thing):
-        return self.bodies[thing]
-
-
-    def stick(self, body):
-        pass
-
-
-    def unstick(self, body):
-        pass
+    def getBody(self, entity):
+        return self.bodies[entity]

@@ -1,16 +1,15 @@
 from lib.levelstate import LevelState
 from lib import world
 
-from lib2d.gamestate import GameState
 from lib2d.ui import Menu
 from lib2d.image import Image
 from lib2d.objects import loadObject
-from lib2d import res, draw
+from lib2d import res, draw, context
 
 import pygame, os
 
 
-class InstructionScreen(GameState):
+class InstructionScreen(context.Context):
     def activate(self):
         self.foreground = (0,0,0)
         self.background = (109, 109, 109)
@@ -36,7 +35,7 @@ class InstructionScreen(GameState):
             self.parent.done()
 
 
-class TitleScreen(GameState):
+class TitleScreen(context.Context):
     borderImage = Image("lpc-border0.png", colorkey=True)
 
     def activate(self):
@@ -49,8 +48,9 @@ class TitleScreen(GameState):
 
         self.new_game()
 
+
     def deactivate(self):
-        GameState.deactivate(self)
+        context.Context.deactivate(self)
 
 
     def reactivate(self):

@@ -31,3 +31,4 @@ class Entity(InteractiveObject):
         super(Entity, self).__init__(avatar, builders)
         self.faceImage = face
         self.held = None
+        self.grounded = False

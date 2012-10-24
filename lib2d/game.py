@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-from lib2d import res
+from lib2d import res, gfx
 import pygame
 
-from lib2d.statedriver import StateDriver
-from lib2d import gfx, config
 
 
 class Game(object):
@@ -12,7 +10,6 @@ class Game(object):
         pygame.init()
         pygame.mixer.init()
         gfx.init()
-        self.sd = StateDriver(self)
 
     def get_screen(self):
         return gfx.screen

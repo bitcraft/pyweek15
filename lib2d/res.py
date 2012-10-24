@@ -35,6 +35,15 @@ def debug(text):
     if DEBUG: sys.stdout.write(text)
 
 
+class Settings(object):
+    pass
+
+
+
+defaults = Settings()
+
+
+defaults.colorkey = False
 
 
 _resPath = "resources"

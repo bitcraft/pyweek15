@@ -1,4 +1,5 @@
 from objects import GameObject
+from image import Image
 import res
 
 from collections import namedtuple
@@ -44,12 +45,14 @@ class Animation(GameObject):
     TODO: implement some sort of timing, rather than relying on frames
     """
 
-    def __init__(self, image, name, frames, directions=1, timing=100):
+    def __init__(self, name, image, frames, directions=1, timing=100):
 
         GameObject.__init__(self)
 
-        self.image = image
+        assert isinstance(image, Image)
+
         self.name = name
+        self.image = image
         self.images = None
         self.directions = directions
         self.frames = frames
@@ -132,7 +135,7 @@ class Animation(GameObject):
 
 
     def __repr__(self):
-        return "<Animation %s: \"%s\">" % (id(self), self.filename)
+        return "<Animation %s: \"%s\">" % (id(self), self.name)
 
 
 class StaticAnimation(Animation):
@@ -141,7 +144,7 @@ class StaticAnimation(Animation):
     Immutable
     """
 
-    def __init__(self, image, name, tile=None, size=None):
+    def __init__(self, name, image, tile=None, size=None):
         GameObject.__init__(self)
 
         self.image = image

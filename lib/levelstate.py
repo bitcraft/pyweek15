@@ -2,8 +2,9 @@ from renderer import LevelCamera
 
 from lib2d.buttons import *
 from lib2d.signals import *
-from lib2d.physics import euclid
 from lib2d import res, ui, gfx, context
+
+from lib.controllers import HeroController
 
 import pygame, math, time
 
@@ -99,124 +100,40 @@ class LevelState(context.Context):
         # hackish pub/sub
         self.area.subscribe(self)
 
+        self.controllers = []
+        c1 = HeroController(self.hero)
+        self.controllers.append(c1)
+
 
     def update(self, time):
         self.area.update(time)
-
-        #awkard ways of preventing player from sliding all over creation
-        if self.hero_body.vel.z == self.hero_body.vel.y == 0:
-                self.hero.avatar.play("stand")
-
-
-        if self.input_changed:
-            self.input_changed = False
-
-            self.hero_body.vel.y = self.player_vector[1]
-            if not self.hero_body.vel.y == 0:
-                self.hero.avatar.play("walk")
+        [ c.update(time) for c in self.controllers ]
 
 
     def draw(self, surface):
-        self.camera.center(self.hero_body.bbox.center)
+        self.camera.center(self.hero_body.position)
         self.ui.draw(surface)
 
 
     def handle_commandlist(self, cmdlist):
         #self.ui.handle_commandlist(cmdlist)
-        self.handleMovementKeys(cmdlist)
+        #self.handleMovementKeys(cmdlist)
 
+        for cmd in cmdlist:
+            [ c.process(cmd) for c in self.controllers ]
 
-    def handleMovementKeys(self, cmdlist):
-        x=0; y=0; z=0
-        playing = self.hero.avatar.curAnimation.name
-        for cls, cmd, arg in cmdlist:
-            if arg == BUTTONUP:
-                self.input_changed = True
-                if cmd == P1_DOWN:
-                    if playing == "crouch":
-                        self.hero.avatar.play("uncrouch", loop=0)
+            #if cmd == P1_ACTION1:
+            #    for thing, body in getNearby(self.hero, 8):
+            #        if hasattr(thing, "use"):
+            #            thing.use(self.hero)
 
-                elif cmd == P1_LEFT or cmd == P1_RIGHT:
-                        y = 0
-
-                elif cmd == P1_ACTION3 and self.hero.held:
-                    #self.hero.parent.unjoin(hero_body, self.hero.held)
-                    #msg = self.text['ungrab'].format(self.hero.held.parent.name)
-                    #self.hero.parent.emitText(msg, thing=self.hero)
-                    self.hero.held = None
-
-            # these actions will repeat as button is held down
-            elif arg == BUTTONDOWN or arg == BUTTONHELD:
-                self.input_changed = True
-                #if cmd == P1_UP:
-                #    self.elevatorUp()
-
-                #elif cmd == P1_DOWN:
-                #    if not self.elevatorDown():
-                #        if self.area.grounded(self.area.getBody(self.hero)):
-                #            if playing == "stand":
-                #                self.hero.avatar.play("crouch", loop_frame=4)
-
-                if cmd == P1_LEFT:
-                    y = -1
-                    self.hero.avatar.flip = 1
-
-                elif cmd == P1_RIGHT:
-                    y = 1
-                    self.hero.avatar.flip = 0
-
-
-            # these actions will not repeat if button is held
-            if arg == BUTTONDOWN:
-                self.input_changed = True
-                #if cmd == P1_ACTION1:
-                #    for thing, body in getNearby(self.hero, 8):
-                #        if hasattr(thing, "use"):
-                #            thing.use(self.hero)
-
-                if cmd == P1_ACTION2:
-                    self.handle_jump()
-
-                #elif cmd == P1_ACTION3:
-                #    for thing, body in getNearby(self.hero, 6):
-                #        if thing.pushable and not self.hero.held:
-                #            self.hero.parent.join(hero_body, body)
-                #            self.hero.held = body
-                #            msg = self.text['grab'].format(thing.name) 
-                #            self.hero.parent.emitText(msg, thing=self.hero)
-
-
-        if (not x == 0) or (not y == 0) or (not z == 0):
-            if self.hero.held:
-                y = y / 3.0
-
-        self.player_vector = x, y*self.hero.move_speed, z
-
-
-    def handle_jump(self):
-        """
-        assume that the key was pressed and the player wants to jump
-        """
-
-        playing = self.hero.avatar.curAnimation.name
-
-        bbox = self.hero_body.bbox.copy()
-        bbox.move(0,0,1)
-
-        if (self.area.physicsgroup.testCollision(bbox) or
-            self.area.physicsgroup.testCollisionOther(self.hero_body, bbox)):
-
-            self.jumps = 1
-            if (not self.hero.held) and (not playing == "crouch"):
-                self.hero_body.vel.z = -self.hero.jump_strength
-                self.hero_body.acc.z = 0.0
-        else:
-            # double jump
-            if self.jumps <= 1:
-                self.jumps += 2
-                self.hero_body.vel.z = -self.hero.jump_strength
-                self.hero_body.acc.z = 0.0
-
+            #elif cmd == P1_ACTION3:
+            #    for thing, body in getNearby(self.hero, 6):
+            #        if thing.pushable and not self.hero.held:
+            #            self.hero.parent.join(hero_body, body)
+            #            self.hero.held = body
+            #            msg = self.text['grab'].format(thing.name) 
+            #            self.hero.parent.emitText(msg, thing=self.hero)
 
 
     def emitSound(self, filename, position):

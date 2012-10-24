@@ -2,6 +2,13 @@ from lib2d import res
 import pygame
 
 
+"""
+lazy image loading
+"""
+
+def get_defaults():
+    return res.defaults.__dict__.copy()
+
 
 class Image(object):
     """
@@ -11,7 +18,8 @@ class Image(object):
     def __init__(self, filename, *args, **kwargs):
         self.filename = filename
         self.args = args
-        self.kwargs = kwargs
+        self.kwargs = get_defaults()
+        self.kwargs.update(kwargs)
         self.loaded = False
 
     def load(self):
@@ -40,4 +48,6 @@ class ImageTile(object):
                   ((self.tilesize[0] * self.tile[0],
                     self.tilesize[1] * self.tile[1]),
                     self.tilesize))
+        if self.image.kwargs['colorkey']:
+            temp.set_colorkey(temp.get_at((0,0)), pygame.RLEACCEL)
         return temp
